@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#141617">
+<title>Readback Stats</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23141617'/%3E%3Ccircle cx='32' cy='32' r='12' fill='%23f0a43a'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one column — header, range switch, totals, daily bars, breakdown lists */
+:root{
+  --bg:#141617; --panel:#1d2022; --bezel:#2b2f32; --line:#3a3f43;
+  --ink:#ece7dc; --dim:#9a968c; --amber:#f0a43a; --amber-soft:#f0a43a33; --bad:#e46b55;
+  --f-display:"Chakra Petch","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--f-body);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:calc(20px + env(safe-area-inset-top,0px)) calc(40px + env(safe-area-inset-bottom,0px))}
+.wrap{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1{font:700 1.7rem var(--f-display);letter-spacing:.04em;text-transform:uppercase;margin:0}
+h1 span{color:var(--amber)}
+.sub{color:var(--dim);margin:0;font-size:.9rem}
+.lbl{font:600 .72rem var(--f-display);letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.login{flex-direction:row;flex-wrap:wrap;align-items:end;gap:10px}
+.login label{display:flex;flex-direction:column;gap:4px;flex:1;min-width:200px}
+input{background:var(--bezel);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:9px 10px;font:500 .95rem var(--f-mono)}
+button{font:600 .9rem var(--f-display);letter-spacing:.04em;padding:10px 16px;border-radius:8px;border:1px solid var(--amber);background:var(--amber);color:#1a1205;cursor:pointer}
+button.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+button[aria-pressed="true"]{background:var(--amber);color:#1a1205;border-color:var(--amber)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.err{color:var(--bad);margin:0;font-size:.9rem}
+.range{display:flex;gap:6px;flex-wrap:wrap}
+.totals{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.tot{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.tot b{display:block;font:700 1.8rem var(--f-display);color:var(--amber);font-variant-numeric:tabular-nums}
+.chart{display:flex;align-items:end;gap:2px;height:140px;border-bottom:1px solid var(--line);padding-top:6px}
+.bar{flex:1;background:var(--amber-soft);border-top:2px solid var(--amber);min-height:2px;border-radius:2px 2px 0 0}
+.bar.zero{border-top-color:var(--line);background:transparent}
+.axis{display:flex;justify-content:space-between;font:500 .75rem var(--f-mono);color:var(--dim)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.list li{display:grid;grid-template-columns:1fr auto;gap:8px;font-size:.92rem;position:relative;padding:3px 6px;border-radius:4px;overflow:hidden}
+.list li > *{position:relative;min-width:0;overflow-wrap:anywhere}
+.list li .fill{position:absolute;inset:0 auto 0 0;background:var(--amber-soft);border-radius:4px}
+.list li b{font:500 .9rem var(--f-mono);font-variant-numeric:tabular-nums}
+.empty{color:var(--dim);font-size:.9rem}
+.note{color:var(--dim);font-size:.82rem;margin:0}
+@media (max-width:480px){.tot b{font-size:1.4rem}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Read<span>back</span> Stats</h1>
+    <p class="sub">Private. Only you can see this page.</p>
+  </header>
+
+  <section class="panel login" id="login">
+    <label><span class="lbl">Stats password</span><input id="pw" type="password" autocomplete="current-password"></label>
+    <button id="go">Open stats</button>
+    <p class="err" id="err" hidden></p>
+  </section>
+
+  <div id="dash" hidden style="display:flex;flex-direction:column;gap:16px">
+    <div class="range" role="group" aria-label="Date range">
+      <button class="ghost" data-d="1">Today</button>
+      <button class="ghost" data-d="7">7 days</button>
+      <button class="ghost" data-d="30" aria-pressed="true">30 days</button>
+      <button class="ghost" data-d="90">90 days</button>
+    </div>
+    <div class="totals">
+      <div class="tot"><span class="lbl">Visits</span><b id="tVisits">0</b></div>
+      <div class="tot"><span class="lbl">Visitors</span><b id="tVisitors">0</b></div>
+      <div class="tot"><span class="lbl">Calls practiced</span><b id="tPlays">0</b></div>
+    </div>
+    <section class="panel">
+      <span class="lbl">Visitors per day</span>
+      <div class="chart" id="chart"></div>
+      <div class="axis"><span id="ax0"></span><span id="ax1"></span></div>
+    </section>
+    <div class="grid">
+      <section class="panel"><span class="lbl">Where they came from</span><ul class="list" id="lFrom"></ul></section>
+      <section class="panel"><span class="lbl">Countries</span><ul class="list" id="lCountry"></ul></section>
+      <section class="panel"><span class="lbl">U.S. states</span><ul class="list" id="lRegion"></ul></section>
+      <section class="panel"><span class="lbl">Device</span><ul class="list" id="lDev"></ul></section>
+      <section class="panel"><span class="lbl">Practice mode</span><ul class="list" id="lMode"></ul></section>
+      <section class="panel"><span class="lbl">Practice phase</span><ul class="list" id="lPhase"></ul></section>
+    </div>
+    <p class="note">Days run on Eastern Time. A visitor is one person on one device per day. Your own visits on this device aren't counted. Tagged links: add ?from=ig, ?from=tiktok or any word to a link and it shows up under "Where they came from."</p>
+    <button class="ghost" id="logout" style="align-self:start">Sign out</button>
+  </div>
+</div>
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const NAMES={ig:"Instagram",direct:"Direct or unknown",facebook:"Facebook",google:"Google",tiktok:"TikTok",youtube:"YouTube",
+  drill:"Drill","flight":"Full flight",atis:"ATIS copy","hands-free":"Hands-free",ground:"Ground",tower:"Tower",pattern:"Pattern",
+  inbound:"Inbound",traffic:"Traffic calls",curve:"Curveballs",light:"Light signals",phone:"Phone",computer:"Computer"};
+let key="",days=30;
+try{key=localStorage.getItem("rb_stats_key")||"";localStorage.setItem("rb_owner","1");}catch(e){}
+function list(id,obj){
+  const ul=$(id);ul.innerHTML="";
+  const rows=Object.entries(obj||{}).sort((a,b)=>b[1]-a[1]).slice(0,12);
+  if(!rows.length){const li=document.createElement("li");li.className="empty";li.textContent="Nothing yet";ul.append(li);return;}
+  const max=rows[0][1];
+  rows.forEach(([k,n])=>{const li=document.createElement("li");const f=document.createElement("span");f.className="fill";f.style.width=(n/max*100)+"%";
+    const a=document.createElement("span");a.textContent=NAMES[k]||k;const b=document.createElement("b");b.textContent=n.toLocaleString();li.append(f,a,b);ul.append(li);});
+}
+const fmt=d=>new Date(d+"T12:00:00").toLocaleDateString(undefined,{month:"short",day:"numeric"});
+async function load(){
+  $("err").hidden=true;
+  let r;try{r=await fetch("/api/stats?days="+days,{headers:{"x-stats-key":key},cache:"no-store"});}catch(e){return fail("Couldn't reach the server. Check your connection.");}
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok)return fail(j.error||"Something went wrong.");
+  try{localStorage.setItem("rb_stats_key",key);}catch(e){}
+  $("login").hidden=true;$("dash").hidden=false;
+  $("tVisits").textContent=j.sum.visits.toLocaleString();$("tVisitors").textContent=j.sum.visitors.toLocaleString();$("tPlays").textContent=j.sum.plays.toLocaleString();
+  const max=Math.max(1,...j.daily.map(d=>d.visitors));const c=$("chart");c.innerHTML="";
+  j.daily.forEach(d=>{const b=document.createElement("div");b.className="bar"+(d.visitors?"":" zero");b.style.height=(d.visitors/max*100)+"%";
+    b.title=`${fmt(d.day)}: ${d.visitors} visitors, ${d.visits} visits, ${d.plays} calls`;c.append(b);});
+  $("ax0").textContent=fmt(j.daily[0].day);$("ax1").textContent=fmt(j.daily[j.daily.length-1].day);
+  list("lFrom",j.sum.from);list("lCountry",j.sum.country);list("lRegion",j.sum.region);list("lDev",j.sum.dev);list("lMode",j.sum.mode);list("lPhase",j.sum.phase);
+}
+function fail(m){$("login").hidden=false;$("dash").hidden=true;$("err").textContent=m;$("err").hidden=false;}
+$("go").onclick=()=>{key=$("pw").value.trim();if(key)load();};
+$("pw").addEventListener("keydown",e=>{if(e.key==="Enter")$("go").click();});
+document.querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{days=+b.dataset.d;document.querySelectorAll("[data-d]").forEach(x=>x.setAttribute("aria-pressed",x===b));load();});
+$("logout").onclick=()=>{try{localStorage.removeItem("rb_stats_key");}catch(e){}key="";$("pw").value="";$("dash").hidden=true;$("login").hidden=false;};
+if(key)load();
+})();
+</script>
+</body>
+</html>

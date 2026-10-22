@@ -576,6 +576,32 @@ function squeal(ms){
 }
 function setRx(on){$("led").classList.toggle("on",on);$("rxtxt").textContent=on?"RX":"STBY";}
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
+// ---------- visit counter (no cookies, no IP storage; the owner's own visits are skipped)
+const track=(()=>{
+  let q=[],t=null,owner=false;
+  try{owner=localStorage.getItem("rb_owner")==="1";}catch(e){}
+  function flush(){
+    if(!q.length)return;const body=JSON.stringify({events:q});q=[];
+    try{if(!(navigator.sendBeacon&&navigator.sendBeacon("/api/hit",new Blob([body],{type:"text/plain"}))))fetch("/api/hit",{method:"POST",body,keepalive:true}).catch(()=>{});}catch(e){}
+  }
+  addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")flush();});
+  addEventListener("pagehide",flush);
+  return ev=>{
+    if(owner||navigator.webdriver)return;
+    if(ev.e==="play"){const same=q.find(x=>x.e==="play"&&x.mode===ev.mode&&x.phase===ev.phase);if(same)same.n++;else q.push(Object.assign({n:1},ev));}
+    else q.push(ev);
+    clearTimeout(t);t=setTimeout(flush,ev.e==="visit"?1500:20000);
+  };
+})();
+function trackVisit(){
+  try{if(sessionStorage.getItem("rb_seen"))return;sessionStorage.setItem("rb_seen","1");}catch(e){}
+  let from=(new URLSearchParams(location.search).get("from")||"").toLowerCase();
+  if(!from&&document.referrer){try{const h=new URL(document.referrer).hostname.replace(/^www\./,"");
+    if(h!==location.hostname)from=/instagram/.test(h)?"ig":/facebook|fb\./.test(h)?"facebook":/google\./.test(h)?"google":/tiktok/.test(h)?"tiktok":/youtube|youtu\.be/.test(h)?"youtube":h;}catch(e){}}
+  if(!from&&/Instagram/i.test(navigator.userAgent))from="ig";
+  track({e:"visit",from:from||"direct",dev:/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)?"phone":"computer"});
+}
+
 // ---------- realistic voices (served by the site's /api/tts function when hosted on Netlify)
 const cloud={on:false,limited:false,cache:new Map(),ael:null,fx:null,dry:null};
 const CLOUD_VOICES=[["g:atc1","★ Realistic controller 1"],["g:atc2","★ Realistic controller 2"],["g:atc3","★ Realistic controller 3"],["g:atcf","★ Realistic controller 4 (female)"]];
@@ -769,6 +795,7 @@ function setCard(item){
 }
 async function listen(isAgain){
   ensureAel();
+  if(!isAgain&&cur)track({e:"play",mode,phase:cur.ph||""});
   if(!("speechSynthesis" in window)&&!cloudActive()){$("hint").textContent="This browser can't speak. Open the page in Chrome, Safari or Edge.";reveal();return;}
   initAudio();if(ctxA&&ctxA.state==="suspended")ctxA.resume();
   $("play").disabled=true;$("again").disabled=true;
@@ -883,6 +910,7 @@ async function hfRun(){
     if(mode==="flight"){if(!flight||flight.i>=flight.steps.length){flight=buildFlight();}item=flight.steps[flight.i++];}
     else item=nextDrill();
     setCard(item);$("play").disabled=true;$("again").disabled=true;
+    track({e:"play",mode:"hands-free",phase:cur.ph||""});
     if(mode==="flight")$("step").textContent=`Step ${flight.i} of ${flight.steps.length}`;
     await narrate(cur.sit,id);await hfWait(500,id);
     if(cur.you){await narrate("Make your call.",id);await hfWait(1500+words(cur.you)*420,id);}
@@ -1009,6 +1037,7 @@ $("good").onclick=()=>grade(true);$("miss").onclick=()=>grade(false);
 document.addEventListener("keydown",e=>{if(e.code==="Space"&&e.target===document.body){e.preventDefault();if(!$("play").disabled&&!$("play").hidden)$("play").click();}});
 paintSetup();
 probeCloud();
+trackVisit();
 try{if(!localStorage.getItem("rb_cfg"))$("setup").open=true;}catch(e){}
 setMode("drill");
 })();
