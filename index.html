@@ -1,0 +1,1018 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Free ATC radio practice for student pilots. Ground, tower, pattern, ATIS and hands-free drills for any U.S. towered airport. Created by @builtforaltitude.">
+<meta property="og:title" content="Readback ATC Trainer">
+<meta property="og:description" content="Free ATC radio practice for student pilots. Ground, tower, pattern, ATIS and hands-free drills for any U.S. towered airport. Created by @builtforaltitude.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#141617">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23141617'/%3E%3Ccircle cx='32' cy='32' r='12' fill='%23f0a43a'/%3E%3C/svg%3E">
+<title>Readback ATC Trainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one avionics "radio stack" column — setup card, mode tabs, control strip, transmission panel, logbook */
+:root{
+  --bg:#141617; --panel:#1d2022; --bezel:#2b2f32; --line:#3a3f43;
+  --ink:#ece7dc; --dim:#9a968c; --amber:#f0a43a; --amber-soft:#f0a43a22;
+  --ok:#7cc47f; --bad:#e46b55; --other:#7fa8c9;
+  --lg:#4fe07a; --lr:#ff4a3a; --lw:#fff6e0;
+  --f-display:"Chakra Petch","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
+.wrap{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+header{display:flex;flex-direction:column;gap:2px}
+h1{font-family:var(--f-display);font-weight:700;font-size:1.9rem;letter-spacing:.04em;margin:0;text-transform:uppercase;text-wrap:balance}
+h1 span{color:var(--amber)}
+.sub{color:var(--dim);font-size:.9rem;margin:0}
+.credit{margin:2px 0 0;font:600 .78rem var(--f-display);letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.credit b{color:var(--amber);font-weight:600;letter-spacing:.04em;text-transform:none;font-family:var(--f-mono)}
+.setup{background:var(--panel);border:1px solid var(--line);border-radius:12px}
+.setup summary{list-style:none;cursor:pointer;padding:12px 16px;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;justify-content:space-between}
+.setup summary::-webkit-details-marker{display:none}
+.setup summary .sum{font-family:var(--f-mono);font-size:.88rem;min-width:0;overflow-wrap:anywhere}
+.setup summary .sum b{color:var(--amber);font-weight:500}
+.setup summary .edit{font:600 .78rem var(--f-display);letter-spacing:.1em;text-transform:uppercase;color:var(--amber);border:1px solid var(--amber);border-radius:6px;padding:4px 10px;flex:none}
+.setup[open] summary .edit::after{content:" ▴"}
+.setup .grid{padding:4px 16px 16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.setup .grid > *{min-width:0}
+.setup h3{grid-column:1/-1;margin:8px 0 0;font:600 .8rem var(--f-display);letter-spacing:.12em;text-transform:uppercase;color:var(--amber)}
+.fld{display:flex;flex-direction:column;gap:4px}
+.fld input,.fld select{background:var(--bezel);border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:8px;font:500 .92rem var(--f-mono);width:100%;max-width:none}
+.fld small{color:var(--dim);font-size:.78rem;line-height:1.35}
+.fld.wide{grid-column:1/-1}
+.aptinfo{grid-column:1/-1;font-family:var(--f-mono);font-size:.85rem;color:var(--dim);margin:0}
+.tabs{display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:4px}
+.tab{flex:1;font:600 .92rem var(--f-display);letter-spacing:.05em;text-transform:uppercase;background:transparent;color:var(--dim);border:0;border-radius:7px;padding:9px 6px;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--bezel);color:var(--amber)}
+.strip{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center}
+.group{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.lbl{font-family:var(--f-display);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.chip{font:500 .85rem var(--f-body);background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:5px 12px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--amber);color:#1a1205;border-color:var(--amber)}
+input[type=range]{accent-color:var(--amber);width:110px}
+.strip select{background:var(--bezel);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:4px 6px;max-width:200px;font:inherit;font-size:.85rem}
+label.tog{display:flex;gap:6px;align-items:center;font-size:.85rem;cursor:pointer}
+label.tog input{accent-color:var(--amber)}
+.radio{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.freq{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 16px;background:var(--bezel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.freq .stn{font-family:var(--f-display);font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);font-size:.95rem}
+.freq .stn small{font-family:var(--f-mono);color:var(--ink);letter-spacing:0;margin-left:8px;font-size:.9rem}
+.sbtn{font:600 .75rem var(--f-display);letter-spacing:.1em;text-transform:uppercase;padding:5px 10px;border-radius:6px;border:1px solid var(--line);background:transparent;color:var(--dim);cursor:pointer;margin-right:6px}
+.sbtn[aria-pressed="true"]{border-color:var(--amber);color:var(--amber)}
+.led{width:10px;height:10px;border-radius:50%;background:#3d3a33;box-shadow:inset 0 0 2px #000}
+.led.on{background:var(--amber);box-shadow:0 0 10px var(--amber)}
+.rx{display:flex;gap:8px;align-items:center;font-family:var(--f-mono);font-size:.8rem;color:var(--dim)}
+.body{padding:16px;display:flex;flex-direction:column;gap:14px}
+.step{font-family:var(--f-display);font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--amber);margin:0}
+.sit{color:var(--dim);font-size:.92rem;margin:0}
+.call{border-left:3px solid var(--amber);background:var(--amber-soft);padding:10px 12px;border-radius:0 8px 8px 0}
+.call .lbl{display:block;margin-bottom:2px}
+.call p{margin:0;font-family:var(--f-mono);font-size:.95rem}
+.call.blind{cursor:pointer}
+.call.blind p{filter:blur(6px);user-select:none}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+button.act{font:600 .95rem var(--f-display);letter-spacing:.04em;padding:11px 16px;border-radius:8px;border:1px solid var(--line);background:var(--bezel);color:var(--ink);cursor:pointer}
+button.act.primary{background:var(--amber);color:#1a1205;border-color:var(--amber)}
+button.act:disabled{opacity:.45;cursor:default}
+button:focus-visible,.chip:focus-visible,select:focus-visible,input:focus-visible,.tab:focus-visible,summary:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.hint{font-size:.85rem;color:var(--dim);margin:0}
+.reveal{border-top:1px dashed var(--line);padding-top:14px;display:flex;flex-direction:column;gap:10px}
+.tx{display:grid;grid-template-columns:96px 1fr;gap:10px;align-items:baseline}
+.tx > *{min-width:0}
+.tx .v{font-family:var(--f-mono);font-size:.93rem}
+.tx.other .v,.tx.other .lbl{color:var(--other)}
+.tx.me .lbl{color:var(--amber)}
+.tx.rb .v{color:var(--ok)}
+.tip{font-size:.9rem;background:var(--bezel);border-radius:8px;padding:8px 12px;margin:0}
+.grade{display:flex;flex-wrap:wrap;gap:8px}
+.grade .good{border-color:var(--ok);color:var(--ok)}
+.grade .miss{border-color:var(--bad);color:var(--bad)}
+.lampwrap{display:flex;align-items:center;gap:18px;background:#0c0d0e;border-radius:10px;padding:18px}
+.lamp{width:64px;height:64px;border-radius:50%;background:#222;flex:none;border:3px solid #333}
+.lamp.green{background:var(--lg);box-shadow:0 0 28px var(--lg)}
+.lamp.red{background:var(--lr);box-shadow:0 0 28px var(--lr)}
+.lamp.white{background:var(--lw);box-shadow:0 0 28px var(--lw)}
+.lamp.flash{animation:flash .9s steps(1) infinite}
+.lamp.alt{animation:alt 1s steps(1) infinite}
+@keyframes flash{50%{background:#222;box-shadow:none}}
+@keyframes alt{0%{background:var(--lr);box-shadow:0 0 28px var(--lr)}50%{background:var(--lg);box-shadow:0 0 28px var(--lg)}}
+.lampwrap p{margin:0;font-family:var(--f-mono);font-size:.9rem}
+.atisform{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.atisform label{display:flex;flex-direction:column;gap:4px}
+.atisform input{background:var(--bezel);border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:8px;font:500 .95rem var(--f-mono);width:100%}
+.atisform input.ok{border-color:var(--ok)}
+.atisform input.no{border-color:var(--bad)}
+.atisform .ans{font-family:var(--f-mono);font-size:.82rem;color:var(--ok);min-height:1.2em}
+.log{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.stats{display:flex;flex-wrap:wrap;gap:22px;font-variant-numeric:tabular-nums}
+.stat b{display:block;font-family:var(--f-display);font-size:1.4rem;color:var(--amber)}
+.stat span{font-size:.78rem;color:var(--dim);text-transform:uppercase;letter-spacing:.08em}
+.missed{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:.88rem}
+.missed code{font-family:var(--f-mono);color:var(--ok)}
+.empty{list-style:none;margin-left:-18px;color:var(--dim)}
+.how{color:var(--dim);font-size:.82rem;margin:0}
+.rbin{display:flex;flex-direction:column;gap:4px}
+.rbin textarea{background:var(--bezel);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:9px 10px;font:500 .95rem var(--f-mono);resize:vertical;width:100%}
+.keys{display:flex;flex-direction:column;gap:6px}
+.keys .row{display:flex;flex-wrap:wrap;gap:6px}
+.key{font:500 .82rem var(--f-mono);padding:3px 9px;border-radius:999px;border:1px solid var(--line)}
+.key.y{border-color:var(--ok);color:var(--ok)}
+.key.n{border-color:var(--bad);color:var(--bad)}
+.verdict{margin:0;font:600 .9rem var(--f-display);letter-spacing:.04em}
+.verdict.y{color:var(--ok)} .verdict.n{color:var(--bad)}
+button.act.sugg{box-shadow:0 0 0 2px currentColor}
+.hfbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--amber-soft);border:1px solid var(--amber);border-radius:10px;padding:10px 14px}
+.hfbar p{margin:0;font-size:.88rem;flex:1;min-width:0}
+@media (max-width:480px){.tx{grid-template-columns:1fr;gap:2px}.tab{font-size:.8rem}h1{font-size:1.6rem}}
+@media (prefers-reduced-motion:reduce){.lamp.flash,.lamp.alt{animation-duration:2s}}
+
+body{margin:0}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>Read<span>back</span></h1>
+    <p class="sub">ATC radio practice for student pilots at any towered airport in the U.S.</p>
+    <p class="credit">Created by <b>@builtforaltitude</b></p>
+  </header>
+
+  <details class="setup" id="setup">
+    <summary><span class="sum" id="sum"></span><span class="edit">Your airport</span></summary>
+    <div class="grid">
+      <h3>Airport</h3>
+      <label class="fld wide"><span class="lbl">Towered airport</span>
+        <input id="c-apt" list="aptlist" autocomplete="off" placeholder="Type an identifier or city, e.g. KISM or Orlando">
+        <datalist id="aptlist"></datalist>
+        <small id="aptmsg">677 U.S. airports with a control tower.</small></label>
+      <p class="aptinfo" id="aptinfo"></p>
+      <label class="fld"><span class="lbl">Name ATC uses</span><input id="c-fac" autocomplete="off">
+        <small>What you say before "Ground" and "Tower". Check your Chart Supplement.</small></label>
+      <label class="fld"><span class="lbl">Your parking spot</span><input id="c-park" autocomplete="off" placeholder="the FBO, Spectrum, north ramp"></label>
+      <h3>Airplane</h3>
+      <label class="fld"><span class="lbl">Aircraft type</span><input id="c-type" autocomplete="off" placeholder="Cessna"></label>
+      <label class="fld"><span class="lbl">Tail number (without N)</span><input id="c-tail" autocomplete="off" placeholder="483E">
+        <small>ATC will call you by this after the first call.</small></label>
+      <h3>Your usual departure</h3>
+      <label class="fld"><span class="lbl">Runway</span><select id="c-rwy"></select></label>
+      <label class="fld"><span class="lbl">Traffic pattern</span><select id="c-dir"><option value="left">Left traffic</option><option value="right">Right traffic</option></select></label>
+      <label class="fld"><span class="lbl">Taxi route to it</span><input id="c-route" autocomplete="off" placeholder="Foxtrot, Bravo, Delta"></label>
+      <label class="fld"><span class="lbl">Hold short point</span><input id="c-hold" autocomplete="off" placeholder="Delta 1 (optional)"></label>
+      <label class="fld"><span class="lbl">Runway you cross on the way</span><select id="c-cross"></select>
+        <small>Optional. Adds hold short and crossing calls.</small></label>
+      <label class="fld"><span class="lbl">Intersection departure point</span><input id="c-inter" autocomplete="off" placeholder="Delta 2 (optional)"></label>
+      <h3>After landing</h3>
+      <label class="fld"><span class="lbl">Usual exit</span><input id="c-exit" autocomplete="off" placeholder="Bravo"></label>
+      <label class="fld"><span class="lbl">Turn to exit</span><select id="c-exitdir"><option value="left">Left</option><option value="right">Right</option></select></label>
+      <label class="fld"><span class="lbl">Route back to parking</span><input id="c-back" autocomplete="off" placeholder="Bravo, Foxtrot"></label>
+      <h3>Other runway (optional)</h3>
+      <label class="fld"><span class="lbl">Runway</span><select id="c-alt"></select></label>
+      <label class="fld"><span class="lbl">Taxi route to it</span><input id="c-altroute" autocomplete="off" placeholder="Foxtrot, Bravo"></label>
+      <p class="aptinfo">Saved in this browser only. Taxi routes come from you, so use the ones ground really gives you.</p>
+    </div>
+  </details>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="t-drill" aria-selected="true">Drill</button>
+    <button class="tab" role="tab" id="t-flight" aria-selected="false">Full flight</button>
+    <button class="tab" role="tab" id="t-atis" aria-selected="false">ATIS copy</button>
+  </div>
+
+  <div class="strip">
+    <div class="group" role="group" aria-label="Phase" id="phases">
+      <span class="lbl">Phase</span>
+      <button class="chip" data-ph="all">All</button>
+      <button class="chip" data-ph="ground">Ground</button>
+      <button class="chip" data-ph="tower">Tower</button>
+      <button class="chip" data-ph="pattern">Pattern</button>
+      <button class="chip" data-ph="inbound">Inbound</button>
+      <button class="chip" data-ph="traffic">Traffic calls</button>
+      <button class="chip" data-ph="curve">Curveballs</button>
+      <button class="chip" data-ph="light">Light signals</button>
+    </div>
+    <div class="group">
+      <label class="lbl" for="rate">Pace</label>
+      <input id="rate" type="range" min="0.9" max="1.6" step="0.05" value="1.2">
+      <span id="rateV" class="rx">1.20×</span>
+    </div>
+    <div class="group">
+      <label class="tog"><input id="chatter" type="checkbox" checked> Other traffic</label>
+      <label class="tog"><input id="hidecall" type="checkbox"> Hide my call</label>
+      <button class="sbtn" id="hfBtn" aria-pressed="false">Hands-free ▸</button>
+    </div>
+    <div class="group">
+      <label class="lbl" for="voice">Voice</label>
+      <select id="voice"></select>
+    </div>
+  </div>
+
+  <div class="hfbar" id="hfbar" hidden><p id="hfmsg">Hands-free is running. Say your calls and readbacks out loud in the pauses. The correct readback plays after each one.</p><button class="act" id="hfStop">Stop</button></div>
+
+  <section class="radio" aria-live="polite">
+    <div class="freq">
+      <span class="stn" id="stn"></span>
+      <span class="rx"><button class="sbtn" id="staticBtn" aria-pressed="true">Static ON</button><span id="led" class="led"></span><span id="rxtxt">STBY</span></span>
+    </div>
+    <div class="body">
+      <p class="step" id="step" hidden></p>
+      <p class="sit" id="sit"></p>
+      <div class="lampwrap" id="lampwrap" hidden><div class="lamp" id="lamp"></div><p id="lamptxt"></p></div>
+      <div class="call" id="callbox">
+        <span class="lbl" id="calllbl"></span>
+        <p id="call"></p>
+      </div>
+      <div class="atisform" id="atisform" hidden>
+        <label><span class="lbl">Letter</span><input id="a-letter" autocomplete="off"><span class="ans" id="r-letter"></span></label>
+        <label><span class="lbl">Wind</span><input id="a-wind" autocomplete="off" placeholder="160 at 8"><span class="ans" id="r-wind"></span></label>
+        <label><span class="lbl">Visibility</span><input id="a-vis" autocomplete="off"><span class="ans" id="r-vis"></span></label>
+        <label><span class="lbl">Sky</span><input id="a-sky" autocomplete="off"><span class="ans" id="r-sky"></span></label>
+        <label><span class="lbl">Temp / Dew</span><input id="a-temp" autocomplete="off" placeholder="28/21"><span class="ans" id="r-temp"></span></label>
+        <label><span class="lbl">Altimeter</span><input id="a-alt" autocomplete="off" inputmode="decimal"><span class="ans" id="r-alt"></span></label>
+        <label><span class="lbl">Runway</span><input id="a-rwy" autocomplete="off"><span class="ans" id="r-rwy"></span></label>
+      </div>
+      <label class="rbin" id="rbwrap"><span class="lbl">Your readback (optional, for automatic checking)</span>
+        <textarea id="rbin" rows="2" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Type it, or tap the mic on your phone's keyboard and say it"></textarea></label>
+      <div class="btns">
+        <button class="act primary" id="play">Listen ▸</button>
+        <button class="act" id="again" disabled>Say again</button>
+        <button class="act" id="show" disabled>Check my readback</button>
+      </div>
+      <p class="hint" id="hint"></p>
+      <div class="reveal" id="reveal" hidden>
+        <div id="txlist" style="display:flex;flex-direction:column;gap:8px"></div>
+        <div class="keys" id="keys" hidden></div>
+        <div class="tx rb"><span class="lbl">You say</span><span class="v" id="rbT"></span></div>
+        <p class="tip" id="tip"></p>
+        <div class="grade">
+          <button class="act good" id="good">Got it right</button>
+          <button class="act miss" id="miss">Missed something</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="log">
+    <div class="stats">
+      <div class="stat"><b id="sDone">0</b><span>Calls</span></div>
+      <div class="stat"><b id="sGood">0</b><span>Correct</span></div>
+      <div class="stat"><b id="sSay">0</b><span>Say agains</span></div>
+    </div>
+    <span class="lbl">Review: calls you missed</span>
+    <ol class="missed" id="missed"><li class="empty">Nothing missed yet. Missed calls show up here with the correct response.</li></ol>
+    <p class="how">Other pilots talk in a second voice. Some calls go to airplanes with call signs close to yours. Those are traps, so stay quiet. Voices marked ★ Realistic are generated by Google Cloud. Other voices come from your device.</p>
+    <p class="how">Readback was created by @builtforaltitude, a student pilot on the way to the airlines.</p>
+    <p class="how">Airport and frequency data from OurAirports, which may be out of date. For training practice only. Always use current charts, the Chart Supplement and your instructor's guidance.</p>
+  </section>
+</div>
+
+<script>
+const APTS=[["06FA","William P Gwinn Airport","Jupiter","FL","121.65","120.4","","","9 27"],["22XS","Longhorn Auxiliary Landing Strip","Fort Hood","TX","","120.75","118.8","ATIS","15 33"],["23XS","Shorthorn Auxiliary Landing Strip","Fort Hood","TX","","120.75","118.8","ATIS","15 33"],["K2CB","Camp Blanding Army Air Field/NG Airfield","Camp Blanding Mil Res(Starke)","FL","","24.1","","","1 7 19 25"],["K79J","South Alabama Regional At Bill Benton Field Airport","Andalusia/Opp","AL","121.9","119.55","134.875","ASOS","11 29"],["K9L2","Edwards Af Aux North Base Airport","Edwards","CA","","120.7","","","6 24"],["KABE","Lehigh Valley International Airport","Allentown/Bethlehem","PA","121.9","120.5","126.975","ATIS","6 13 24 31"],["KABI","Abilene Regional Airport","Abilene","TX","121.7","120.1","118.25","ATIS","4 17L 17R 22 35L 35R"],["KABQ","Albuquerque International Sunport","Albuquerque","NM","121.9","120.3","118","ATIS","3 8 12 21 26 30"],["KABY","Southwest Georgia Regional Airport","Albany","GA","121.9","120.25","133.05","ATIS","5 17 23 35"],["KACK","Nantucket Memorial Airport","Nantucket","MA","121.7","118.3","127.5","ATIS","6 15 24 33"],["KACT","Waco Regional Airport","Waco","TX","121.9","119.3","123.85","ATIS","1 14 19 32"],["KACY","Atlantic City International Airport","Atlantic City","NJ","121.9","120.3","108.6","ATIS","4 13 22 31"],["KADM","Ardmore Municipal Airport","Ardmore","OK","121.8","118.5","125.6","ATIS","13 17 31 35"],["KADS","Addison Airport","Dallas","TX","121.6","126","133.4","ATIS","16 34"],["KADW","Joint Base Andrews","Camp Springs","MD","121.8","118.4","113.1","ATIS","1L 1R 19L 19R"],["KAEG","Double Eagle II Airport","Albuquerque","NM","","120.15","119.025","AWOS","4 17 22 35"],["KAEX","Alexandria International Airport","Alexandria","LA","121.9","127.35","123.975","ASOS","14 18 32 36"],["KAFF","USAF Academy Airfield","Colorado Springs","CO","118.125","124.15","128.525","ATIS","9 16C 16L 16R 27 34C 34L 34R"],["KAFW","Perot Field/Fort Worth Alliance Airport","Fort Worth","TX","132.65","120.825","126.925","ATIS","16L 16R 34L 34R"],["KAGC","Allegheny County Airport","Pittsburgh","PA","121.7","121.1","120.55","ATIS","10 13 28 31"],["KAGS","Augusta Regional At Bush Field","Augusta","GA","121.9","118.7","132.75","ATIS","8 17 26 35"],["KAHN","Athens Ben Epps Airport","Athens","GA","121.8","126.3","132.875","ASOS","2 9 20 27"],["KAID","Anderson Municipal Darlington Field","Anderson","IN","121.6","126","118.375","AWOS","12 18 30 36"],["KALB","Albany International Airport","Albany","NY","121.7","119.5","120.45","ATIS","1 10 19 28"],["KALN","St Louis Regional Airport","Alton/St Louis","IL","120.2","126","128","ATIS","11 17 29 35"],["KALO","Waterloo Regional Airport","Waterloo","IA","121.9","118.1","120.65","ATIS","12 18 30 36"],["KALW","Walla Walla Regional Airport","Walla Walla","WA","121.6","118.5","135.875","ASOS","2 20"],["KAMA","Rick Husband Amarillo International Airport","Amarillo","TX","121.9","118.3","118.85","ATIS","4 13 22 31"],["KANE","Anoka County-Blaine (Janes Field) Airport","Minneapolis","MN","121.85","126.05","120.625","ATIS","9 18 27 36"],["KAPA","Centennial Airport","Denver","CO","121.8","118.9","120.3","ATIS","10 17L 17R 28 35L 35R"],["KAPC","Napa County Airport","Napa","CA","121.7","118.7","124.05","ATIS","1L 1R 6 19L 19R 24"],["KAPF","Naples Municipal Airport","Naples","FL","121.6","128.5","134.225","ATIS","5 14 23 32"],["KAPG","Phillips Army Air Field","Aberdeen","MD","121.9","126.15","108.4","ATIS","4 22"],["KAPN","Alpena County Regional Airport","Alpena","MI","121.9","121.35","120.675","ASOS","1 7 19 25"],["KARA","Acadiana Regional Airport","New Iberia","LA","121.7","125","","","16 34"],["KARB","Ann Arbor Municipal Airport","Ann Arbor","MI","","120.3","134.55","ATIS","6 24"],["KARR","Aurora Municipal Airport","Chicago/Aurora","IL","121.7","120.6","125.85","ATIS","9 15 18 27 33 36"],["KASE","Aspen-Pitkin County Airport (Sardy Field)","Aspen","CO","121.9","118.85","120.4","ATIS","15 33"],["KASG","Springdale Municipal Airport","Springdale","AR","121.6","118.2","124.675","AWOS","18 36"],["KASH","Nashua Airport / Boire Field","Nashua","NH","121.8","133.2","125.1","ATIS","14 32"],["KATL","Hartsfield Jackson Atlanta International Airport","Atlanta","GA","121.65","119.1","119.65","ATIS","8L 8R 9L 9R 10 26L 26R 27L 27R 28"],["KATW","Appleton International Airport","Appleton","WI","121.7","119.6","127.15","ATIS","3 12 21 30"],["KAUS","Austin Bergstrom International Airport","Austin","TX","121.7","121","124.4","ATIS","18L 18R 36L 36R"],["KAVL","Asheville Regional Airport","Asheville","NC","121.9","121.1","120.2","ATIS","17 35"],["KAVP","Wilkes-Barre/Scranton International Airport","Wilkes-Barre/Scranton","PA","121.9","120.1","111.6","ATIS","4 10 22 28"],["KAZO","Kalamazoo/Battle Creek International Airport","Kalamazoo","MI","121.9","118.3","127.25","ATIS","5 9 17 23 27 35"],["KBAB","Beale Air Force Base","Beale Air Force Base","CA","121.6","119.4","27.35","ATIS","15 33"],["KBAD","Barksdale Air Force Base","Bossier City","LA","121.8","128.25","37.58","ATIS","15 33"],["KBAF","Westfield-Barnes Regional Airport","Westfield","MA","121.7","125.075","127.1","ATIS","2 15 20 33"],["KBAK","Columbus Municipal Airport","Columbus","IN","121.6","118.6","119.75","AWOS","5 14 23 32"],["KBCT","Boca Raton Airport","Boca Raton","FL","121.8","118.425","121.125","AWOS","5 23"],["KBDL","Bradley International Airport","Hartford","CT","121.9","120.3","118.15","ATIS","6 15 24 33"],["KBDR","Igor I Sikorsky Memorial Airport","Bridgeport","CT","121.9","120.9","119.15","ATIS","6 11 24 29"],["KBEC","Beech Factory Airport","Wichita","KS","121.7","126.8","","","1 19"],["KBED","Laurence G Hanscom Field","Bedford","MA","121.7","118.5","124.6","ATIS","5 11 23 29"],["KBFI","King County International Airport - Boeing Field","Seattle","WA","121.9","118.3","127.75","ATIS","14L 14R 32L 32R"],["KBFL","Meadows Field","Bakersfield","CA","121.7","118.1","118.6","ATIS","12L 12R 30L 30R"],["KBFM","Mobile Downtown Airport","Mobile","AL","121.7","118.8","135.575","ATIS","14 18 32 36"],["KBGM","Greater Binghamton/Edwin A Link field","Binghamton","NY","121.9","119.3","128.15","ATIS","10 16 28 34"],["KBGR","Bangor International Airport","Bangor","ME","121.9","120.7","127.75","ATIS","15 33"],["KBHM","Birmingham-Shuttlesworth International Airport","Birmingham","AL","121.7","119.9","119.4","ATIS","6 18 24 36"],["KBIF","Biggs Army Air Field (Fort Bliss)","Fort Bliss/El Paso","TX","121.6","127.9","","","4 22"],["KBIL","Billings Logan International Airport","Billings","MT","121.9","124.2","126.3","ATIS","7 10L 10R 25 28L 28R"],["KBIS","Bismarck Municipal Airport","Bismarck","ND","121.9","118.3","119.35","ATIS","3 13 21 31"],["KBIX","Keesler Air Force Base","Biloxi","MS","121.8","120.75","25.6","ATIS","4 22"],["KBJC","Rocky Mountain Metropolitan Airport","Denver","CO","121.7","118.6","126.25","ATIS","3 12L 12R 21 30L 30R"],["KBKF","Buckley Space Force Base","Aurora","CO","121.6","121","119.675","ATIS","14 32"],["KBKL","Burke Lakefront Airport","Cleveland","OH","121.9","124.3","125.25","ATIS","6L 6R 24L 24R"],["KBKT","Allen C Perkinson Blackstone Army Air Field","Blackstone","VA","","38.3","","","4 22"],["KBLI","Bellingham International Airport","Bellingham","WA","127.4","124.9","134.45","ATIS","16 34"],["KBLV","Scott AFB/Midamerica Airport","Belleville","IL","119.2","118.65","128.7","ATIS","14L 14R 32L 32R"],["KBMG","Monroe County Airport","Bloomington","IN","121.9","120.775","110.2","ASOS","6 17 24 35"],["KBMI","Central Illinois Regional Airport at Bloomington-Normal","Bloomington/Normal","IL","121.65","124.6","135.35","ATIS","2 11 20 29"],["KBNA","Nashville International Airport","Nashville","TN","121.9","118.6","135.1","ATIS","2C 2L 2R 13 20C 20L 20R 31"],["KBOI","Boise Air Terminal/Gowen Field","Boise","ID","121.7","118.1","123.9","ATIS","10L 10R 28L 28R"],["KBOS","Boston Logan International Airport","Boston","MA","121.75","128.8","135","ATIS","4L 4R 9 14 15L 15R 22L 22R 27 32 33L 33R"],["KBOW","Bartow Executive Airport","Bartow","FL","121.9","121.2","123.775","AWOS","5 9L 9R 23 27L 27R"],["KBPT","Jack Brooks Regional Airport","Beaumont/Port Arthur","TX","121.9","119.5","126.3","ATIS","12 16 30 34"],["KBRO","Brownsville South Padre Island International Airport","Brownsville","TX","121.9","118.9","128.55","ATIS","13 18 31 36"],["KBTL","Battle Creek Executive Airport at Kellogg Field","Battle Creek","MI","121.7","126.825","128.325","ATIS","5L 5R 13 23L 23R 31"],["KBTR","Baton Rouge Metropolitan Airport","Baton Rouge","LA","121.9","118.45","125.2","ATIS","4 13 22 31"],["KBTV","Patrick Leahy Burlington International Airport","Burlington","VT","121.9","118.3","123.8","ATIS","1 15 19 33"],["KBUF","Buffalo Niagara International Airport","Buffalo","NY","133.2","120.5","135.35","ATIS","5 14 23 32"],["KBUR","Hollywood Burbank/Bob Hope Airport","Burbank","CA","123.9","118.7","134.5","ATIS","8 15 26 33"],["KBVI","Beaver County Airport","Beaver Falls","PA","121.8","120.3","118.35","ATIS","10 28"],["KBVY","Beverly Regional Airport","Beverly / Danvers","MA","121.6","125.2","119.2","ATIS","9 16 27 34"],["KBWI","Baltimore/Washington International Thurgood Marshall Airport","Baltimore","MD","121.9","119.4","115.1","ATIS","10 15L 15R 28 33L 33R"],["KBXM","Brunswick Executive Airport","Brunswick","ME","134.55","119.6","120.55","ATIS","1R 19L"],["KBZN","Bozeman Yellowstone International Airport","Bozeman","MT","121.8","118.2","135.425","ATIS","3 11 12 21 29 30"],["KCAE","Columbia Metropolitan Airport","Columbia","SC","121.9","119.5","120.15","ATIS","5 11 23 29"],["KCAK","Akron Canton Regional Airport","Akron","OH","121.7","118.3","121.05","ATIS","1 5 19 23"],["KCBM","Columbus Air Force Base","Columbus","MS","121.9","128.65","115.2","ATIS","13C 13L 13R 31C 31L 31R"],["KCCR","Buchanan Field","Concord","CA","121.9","119.7","124.7","ATIS","1L 1R 14L 14R 19L 19R 32L 32R"],["KCDW","Essex County Airport","Caldwell","NJ","121.9","119.8","135.5","ATIS","4 10 22 28"],["KCEA","Cessna Aircraft Field","Wichita","KS","","127.25","","","17 35"],["KCEF","Westover Metropolitan Airport / Westover Air Reserve Base","Chicopee","MA","118.35","134.85","114","ATIS","5 15 23 33"],["KCFO","Colorado Air and Space Port","Denver","CO","124.7","120.2","119.025","ATIS","8 17 26 35"],["KCGF","Cuyahoga County Airport","Cleveland","OH","","118.5","","","6 24"],["KCGI","Cape Girardeau Regional Airport","Cape Girardeau","MO","121.6","119","120.55","ASOS","2 10 20 28"],["KCHA","Chattanooga Metropolitan Airport (Lovell Field)","Chattanooga","TN","121.7","118.3","119.85","ATIS","2 15 20 33"],["KCHD","Chandler Municipal Airport","Chandler","AZ","124.4","126.1","128.325","ATIS","4L 4R 22L 22R"],["KCHO","Charlottesville Albemarle Airport","Charlottesville","VA","121.9","124.5","118.425","ATIS","3 21"],["KCHS","Charleston International Airport","Charleston","SC","121.9","126","124.75","ATIS","3 15 21 33"],["KCIC","Chico Regional Airport","Chico","CA","121.9","121","119.675","AWOS","13L 13R 31L 31R"],["KCID","The Eastern Iowa Airport","Cedar Rapids","IA","121.6","118.7","124.15","ATIS","9 13 27 31"],["KCKB","North Central West Virginia Airport","Bridgeport","WV","121.9","126.7","127.825","ATIS","3 21"],["KCLE","Cleveland Hopkins International Airport","Cleveland","OH","121.7","120.9","127.85","ATIS","6L 6R 10 24L 24R 28"],["KCLL","Easterwood Field","College Station","TX","128.7","118.5","126.85","ATIS","11 17 29 35"],["KCLT","Charlotte Douglas International Airport","Charlotte","NC","121.8","118.1","121.15","ATIS","1L 1R 18 19L 19R 36"],["KCMA","Camarillo Airport","Camarillo","CA","121.8","128.2","126.025","ATIS","7 8 25 26"],["KCMH","John Glenn Columbus International Airport","Columbus","OH","121.9","132.7","124.6","ATIS","10L 10R 28L 28R"],["KCMI","University of Illinois Willard Airport","Savoy","IL","121.8","118.25","124.85","ATIS","4 14L 14R 22 32L 32R"],["KCMY","Sparta Fort McCoy Airport","Sparta","WI","","38.5","118.375","AWOS","1 11 19 29"],["KCNO","Chino Airport","Chino","CA","121.6","118.5","125.85","ATIS","3 8L 8R 21 26L 26R"],["KCNW","TSTC Waco Airport","Waco","TX","121.7","124","134.225","AWOS","17L 17R 35L 35R"],["KCOF","Patrick Space Force Base","Cocoa Beach","FL","124.35","133.75","119.175","ATIS","3 11 21 29"],["KCOS","City of Colorado Springs Municipal Airport","Colorado Springs","CO","121.7","119.9","125","ATIS","12 17L 17R 30 35L 35R"],["KCOU","Columbia Regional Airport","Columbia","MO","121.6","119.3","128.45","ATIS","2 13 20 31"],["KCPR","Casper-Natrona County International Airport","Casper","WY","","118.3","126.15","ATIS","3 17 21 35"],["KCPS","St Louis Downtown Airport","Cahokia/St Louis","IL","121.8","119.925","121.45","ATIS","5 12L 12R 23 30L 30R"],["KCRE","Grand Strand Airport","North Myrtle Beach","SC","121.8","124.6","119.625","ATIS","5 23"],["KCRG","Jacksonville Executive at Craig Airport","Jacksonville","FL","121.8","132.1","125.4","ATIS","5 14 23 32"],["KCRP","Corpus Christi International Airport","Corpus Christi","TX","121.9","119.4","126.8","ATIS","13 17 31 35"],["KCRQ","McClellan-Palomar Airport","Carlsbad","CA","121.8","118.6","120.15","ATIS","6 24"],["KCRW","Yeager Airport","Charleston","WV","121.8","125.7","127.6","ATIS","5 23"],["KCSG","Columbus Airport","Columbus","GA","121.9","120.1","127.75","ATIS","6 13 24 31"],["KCSM","Clinton Sherman Airport","Clinton","OK","121.7","119.6","135.225","ASOS","17L 17R 35L 35R"],["KCVG","Cincinnati Northern Kentucky International Airport","Cincinnati / Covington","KY","121.7","118.3","134.375","ATIS","9 18C 18L 18R 27 36C 36L 36R"],["KCVS","Cannon Air Force Base","Clovis","NM","121.9","120.4","119.1","ATIS","4 13 22 31"],["KCWA","Central Wisconsin Airport","Mosinee","WI","121.9","119.75","127.45","ATIS","8 17 26 35"],["KCWF","Chennault International Airport","Lake Charles","LA","121.65","124.2","120","AWOS","15 33"],["KCXY","Capital City Airport","Harrisburg","PA","121.9","119.5","134.95","ATIS","8 12 26 30"],["KCYS","Cheyenne Regional Jerry Olson Field","Cheyenne","WY","121.9","118.7","134.425","ATIS","9 13 27 31"],["KDAA","Davison Army Air Field","Fort Belvoir","VA","121.9","126.3","128.175","ATIS","14 32"],["KDAB","Daytona Beach International Airport","Daytona Beach","FL","121.9","120.7","132.875","ATIS","7L 7R 16 25L 25R 34"],["KDAL","Dallas Love Field","Dallas","TX","121.75","118.7","120.15","ATIS","13L 13R 31L 31R"],["KDAY","James M. Cox Dayton International Airport","Dayton","OH","121.9","119.9","125.8","ATIS","6L 6R 18 24L 24R 36"],["KDBQ","Dubuque Regional Airport","Dubuque","IA","121.8","119.5","127.25","ATIS","13 18 31 36"],["KDCA","Ronald Reagan Washington National Airport","Washington","DC","121.7","119.1","","","1 4 15 19 22 33"],["KDEC","Decatur Airport","Decatur","IL","121.75","118.9","126.35","ATIS","6 12 18 24 30 36"],["KDEN","Denver International Airport","Denver","CO","121.85","124.3","125.6","ATIS","7 8 16L 16R 17L 17R 25 26 34L 34R 35L 35R"],["KDET","Coleman A. Young Municipal Airport","Detroit","MI","121.85","121.3","124.875","ATIS","15 33"],["KDFW","Dallas Fort Worth International Airport","Dallas-Fort Worth","TX","121.65","124.15","123.775","ATIS","13L 13R 17C 17L 17R 18L 18R 31L 31R 35C 35L 35R 36L 36R"],["KDHN","Dothan Regional Airport","Dothan","AL","121.7","118.4","135.72","ATIS","14 18 32 36"],["KDJT","President Donald J. Trump International Airport","West Palm Beach","FL","121.9","119.1","123.75","ATIS","10L 10R 14 28L 28R 32"],["KDLF","Laughlin Air Force Base","Del Rio","TX","138.75","125.2","114.4","ATIS","13C 13L 13R 31C 31L 31R"],["KDLH","Duluth International Airport","Duluth","MN","121.9","118.3","124.1","ATIS","3 9 21 27"],["KDMA","Davis Monthan Air Force Base","Tucson","AZ","121.8","118.85","27.01","ATIS","12 30"],["KDOV","Dover Civil Air Terminal/Dover Air Force Base","Dover","DE","118.875","126.35","135.05","ATIS","1 14 19 32"],["KDPA","Dupage Airport","Chicago/West Chicago","IL","121.8","120.9","124.8","ATIS","2L 2R 10 15 20L 20R 28 33"],["KDSM","Des Moines International Airport","Des Moines","IA","121.9","118.3","119.55","ATIS","5 13 23 31"],["KDTN","Shreveport Downtown Airport","Shreveport","LA","121.65","120.225","118.525","ASOS","5 14 23 32"],["KDTO","Denton Enterprise Airport","Denton","TX","","119.95","119.325","ASOS","18L 18R 36L 36R"],["KDTW","Detroit Metropolitan Wayne County Airport","Detroit","MI","119.25","118.4","133.675","ATIS","3L 3R 4L 4R 9L 9R 21L 21R 22L 22R 27L 27R"],["KDVT","Phoenix Deer Valley Airport","Phoenix","AZ","121.8","118.4","126.5","ATIS","7L 7R 25L 25R"],["KDWH","David Wayne Hooks Memorial Airport","Houston","TX","121.8","118.4","124.95","ATIS","17L 17R 35L 35R"],["KDXR","Danbury Municipal Airport","Danbury","CT","121.6","119.4","127.75","ATIS","8 17 26 35"],["KDYS","Dyess Air Force Base","Abilene","TX","118.35","133","38.57","ATIS","16 34"],["KECG","Elizabeth City Regional Airport & Coast Guard Air Station","Elizabeth City","NC","121.9","120.5","118.525","ASOS","10 28"],["KECP","Northwest Florida Beaches International Airport","Panama City Beach","FL","121.65","118.95","119.975","ATIS","16 34"],["KEDW","Edwards Air Force Base","Edwards","CA","121.8","120.7","26.99","ATIS","5L 5R 7 23L 23R 25"],["KEFD","Ellington Airport","Houston","TX","121.6","126.05","135.575","ATIS","17L 17R 35L 35R"],["KEGE","Eagle County Regional Airport","Eagle","CO","","119.8","135.575","ATIS","7 25"],["KEGI","Duke Field","Crestview","FL","25.112","133.2","","","18 36"],["KEKM","Elkhart Municipal Airport","Elkhart","IN","121.8","119.5","124.475","AWOS","8 9 18 26 27 36"],["KELM","Elmira Corning Regional Airport","Elmira/Corning","NY","121.9","121.1","125.475","ATIS","5 6 10 23 24 28"],["KELP","El Paso International Airport","El Paso","TX","121.9","118.3","120","ATIS","4 8L 8R 22 26L 26R"],["KEMT","San Gabriel Valley Airport","El Monte","CA","125.9","121.2","118.75","ATIS","1 19"],["KEND","Vance Air Force Base","Enid","OK","121.8","124.05","115.4","ATIS","17C 17L 17R 35C 35L 35R"],["KENW","Kenosha Regional Airport","Kenosha","WI","121.875","118.6","127.175","ATIS","7L 7R 15 25L 25R 33"],["KERI","Erie International Tom Ridge Field","Erie","PA","121.9","118.1","120.35","ATIS","2 6 20 24"],["KEUG","Eugene Airport","Eugene","OR","121.7","118.9","125.225","ATIS","16L 16R 34L 34R"],["KEVB","New Smyrna Beach Municipal Airport","New Smyrna Beach","FL","121.325","119.675","124.625","ATIS","2 7 11 20 25 29"],["KEVV","Evansville Regional Airport","Evansville","IN","121.9","118.7","120.2","ATIS","4 9 18 22 27 36"],["KEWB","New Bedford Regional Airport","New Bedford","MA","121.9","118.1","126.85","ATIS","5 14 23 32"],["KEWN","Coastal Carolina Regional Airport","New Bern","NC","121.7","124.25","118.525","ASOS","4 14 22 32"],["KEWR","Newark Liberty International Airport","Newark","NJ","121.8","118.3","115.7","ATIS","4L 4R 11 22L 22R 29"],["KEYW","Key West International Airport","Key West","FL","121.9","118.2","119.675","ATIS","9 27"],["KFAF","Felker Army Air Field","Newport News (Fort Eustis)","VA","121.35","126.3","","","14 32"],["KFAR","Hector International Airport","Fargo","ND","121.9","133.8","124.5","ATIS","9 13 18 27 31 36"],["KFAT","Fresno Yosemite International Airport","Fresno","CA","121.7","118.2","121.35","ATIS","11L 11R 29L 29R"],["KFAY","Fayetteville Regional Airport - Grannis Field","Fayetteville","NC","","118.3","121.25","ATIS","4 10 22 28"],["KFBG","Simmons Army Air Field","Fort Bragg","NC","","125.9","139.25","ATIS","10 28"],["KFCM","Flying Cloud Airport","Minneapolis","MN","121.7","118.1","124.9","ATIS","10L 10R 18 28L 28R 36"],["KFCS","Butts AAF (Fort Carson) Air Field","Fort Carson","CO","","125.5","108.8","ATIS","13 31"],["KFDK","Frederick Municipal Airport","Frederick","MD","","132.4","","","5 12 23 30"],["KFFO","Wright-Patterson Air Force Base","Dayton","OH","121.8","126.9","124.475","ATIS","5L 5R 23L 23R"],["KFFZ","Falcon Field","Mesa","AZ","121.3","124.6","118.25","ATIS","4L 4R 22L 22R"],["KFHU","Sierra Vista Municipal Airport / Libby Army Air Field","Fort Huachuca / Sierra Vista","AZ","121.7","124.95","134.75","ATIS","3 8 12 21 26 30"],["KFLG","Flagstaff Pulliam Airport","Flagstaff","AZ","121.9","134.55","125.8","ATIS","3 21"],["KFLL","Fort Lauderdale Hollywood International Airport","Fort Lauderdale","FL","121.4","119.3","135","ATIS","10L 10R 28L 28R"],["KFLO","Florence Regional Airport","Florence","SC","","125.1","123.625","ATIS","1 9 19 27"],["KFMH","Cape Cod Coast Guard Air Station","Falmouth","MA","121.6","121","","","5 14 23 32"],["KFMN","Four Corners Regional Airport","Farmington","NM","121.7","118.9","127.15","ATIS","5 7 23 25"],["KFMY","Page Field","Fort Myers","FL","121.7","119","123.725","ATIS","5 13 23 31"],["KFNT","Bishop International Airport","Flint","MI","121.9","126.3","133.15","ATIS","9 18 27 36"],["KFOE","Topeka Regional Airport","Topeka","KS","121.7","120.8","128.25","ATIS","3 13 21 31"],["KFOK","Francis S Gabreski Airport","Westhampton Beach","NY","121.8","125.3","119.925","ASOS","1 6 15 19 24 33"],["KFPR","Treasure Coast International Airport","Fort Pierce","FL","119.55","128.2","134.825","ATIS","10R 14 28L 32"],["KFRG","Republic Airport","East Farmingdale","NY","121.6","118.8","126.65","ATIS","1 14 19 32"],["KFSD","Sioux Falls Regional Airport","Sioux Falls","SD","121.9","118.3","126.6","ATIS","3 9 15 21 27 33"],["KFSI","Henry Post Army Air Field","Fort Sill","OK","121.7","124.95","135.425","ATIS","18 36"],["KFSM","Fort Smith Regional Airport","Fort Smith","AR","121.9","118.3","126.3","ATIS","7 25"],["KFTK","Godman Army Air Field","Fort Knox","KY","121.9","126.8","109.6","ATIS","5 15 18 23 33 36"],["KFTW","Fort Worth Meacham International Airport","Fort Worth","TX","121.9","118.3","120.7","ATIS","16 17 34 35"],["KFTY","Fulton County Airport Brown Field","Atlanta","GA","121.7","118.45","120.175","ATIS","8 26"],["KFUL","Fullerton Municipal Airport","Fullerton","CA","121.8","119.1","125.05","ATIS","6 24"],["KFWA","Fort Wayne International Airport","Fort Wayne","IN","121.9","119.1","121.25","ATIS","5 9 14 23 27 32"],["KFWS","Fort Worth Spinks Airport","Fort Worth","TX","119.475","124.625","120.025","AWOS","18L 18R 36L 36R"],["KFXE","Fort Lauderdale Executive Airport","Fort Lauderdale","FL","121.75","120.9","119.85","ATIS","9 13 27 31"],["KFYV","Drake Field","Fayetteville","AR","121.8","128","133.1","ATIS","16 34"],["KGCC","Northeast Wyoming Regional Airport","Gillette","WY","121.7","118.5","124.175","ASOS","3 16 21 34"],["KGCK","Garden City Regional Airport","Garden City","KS","119","118.15","121.325","ASOS","12 17 30 35"],["KGCN","Grand Canyon National Park Airport","Grand Canyon - Tusayan","AZ","121.9","119","124.3","ATIS","3 21"],["KGEG","Spokane International Airport","Spokane","WA","121.9","118.3","124.325","ATIS","3 8 21 26"],["KGEU","Glendale Municipal Airport","Glendale","AZ","118","121","119.425","ATIS","1 19"],["KGFK","Grand Forks International Airport","Grand Forks","ND","124.575","118.4","119.4","ATIS","9L 9R 17L 17R 27L 27R 35L 35R"],["KGGG","East Texas Regional Airport","Longview","TX","121.6","119.2","119.65","ATIS","13 18 31 36"],["KGJT","Grand Junction Regional Airport","Grand Junction","CO","121.7","118.1","118.55","ATIS","4 11 22 29"],["KGLH","Mid Delta Regional Airport","Greenville","MS","121.8","119","125.525","ASOS","18L 18R 36L 36R"],["KGLS","Scholes International At Galveston Airport","Galveston","TX","118.625","120.575","119.275","ASOS","14 18 32 36"],["KGMU","Greenville Downtown Airport","Greenville","SC","121.25","119.9","127.075","ASOS","1 10 19 28"],["KGNV","Gainesville Regional Airport","Gainesville","FL","121.7","119.55","127.15","ATIS","7 11 25 29"],["KGON","Groton New London Airport","Groton","CT","121.65","125.6","127","ATIS","5 15 23 33"],["KGOV","Grayling Army Air Field","Grayling","MI","121.9","36.5","119.075","AWOS","5 14 23 32"],["KGPI","Glacier Park International Airport","Kalispell","MT","121.6","124.55","132.625","ATIS","2 12 20 30"],["KGPM","Grand Prairie Municipal Airport","Grand Prairie","TX","121.15","128.55","118.475","AWOS","18 36"],["KGPT","Gulfport Biloxi International Airport","Gulfport","MS","120.4","123.7","119.45","ATIS","14 18 32 36"],["KGRB","Austin Straubel International Airport","Green Bay","WI","121.9","118.7","124.1","ATIS","6 18 24 36"],["KGRF","Gray Army Air Field","Joint Base Lewis McChord","WA","121.9","119.325","124.65","ATIS","15 33"],["KGRI","Central Nebraska Regional Airport","Grand Island","NE","121.9","118.2","127.4","ATIS","13 17 31 35"],["KGRK","Killeen Regional Airport / Robert Gray Army Airfield","Fort Cavazos","TX","126.2","120.75","111.8","ATIS","15 33"],["KGRR","Gerald R. Ford International Airport","Grand Rapids","MI","121.8","135.65","118.725","ATIS","8L 8R 17 26L 26R 35"],["KGSB","Seymour Johnson Air Force Base","Goldsboro","NC","138.1","126.25","31.762","ATIS","8 26"],["KGSO","Piedmont Triad International Airport","Greensboro","NC","121.9","119.1","128.55","ATIS","5L 5R 14 23L 23R 32"],["KGSP","Greenville-Spartanburg International Airport","Greenville/Greer/Spartanburg","SC","121.9","120.1","134.25","ATIS","4 22"],["KGTB","Wheeler Sack Army Air Field","Fort Drum","NY","121.9","118.75","126.55","ATIS","3 8 15 21 26 33"],["KGTF","Great Falls International Airport","Great Falls","MT","121.7","118.7","126.6","ATIS","3 7 17 21 25 35"],["KGTR","Golden Triangle Regional Airport","Columbus/W Point/Starkville","MS","135.375","118.2","126.375","ATIS","18 36"],["KGUS","Grissom Air Reserve Base","Peru","IN","128.425","133.7","108.45","ATIS","5 23"],["KGVT","Majors Airport","Greenville","TX","121.7","118.65","133.425","AWOS","17 35"],["KGWO","Greenwood\u2013Leflore Airport","Greenwood","MS","125.55","118.35","119.975","ASOS","5 9 18 23 27 36"],["KGXF","Gila Bend Air Force Auxiliary Airport","Gila Bend","AZ","","127.75","","","17 35"],["KGYH","Donaldson Field Airport","Greenville","SC","121.4","133.325","127.325","AWOS","5 23"],["KGYR","Phoenix Goodyear Airport","Goodyear","AZ","121.7","120.1","118.35","ATIS","3 21"],["KGYY","Gary/Chicago International Airport","Gary","IN","121.9","125.6","120.625","ATIS","2 12 20 30"],["KHEF","Washington Manassas Harry P. Davis Field","Manassas","VA","121.8","133.1","125.175","ATIS","16L 16R 34L 34R"],["KHFD","Hartford Brainard Airport","Hartford","CT","121.6","119.6","126.45","ATIS","2 11 20 29"],["KHFF","Mackall Army Air Field","Hoffman","NC","41.75","121","141.4","ATIS","4 11 16 22 29 34"],["KHGR","Hagerstown Regional Richard A Henson Field","Hagerstown","MD","121.9","120.3","126.375","ASOS","2 9 20 27"],["KHHR","Jack Northrop Field Hawthorne Municipal Airport","Hawthorne","CA","125.1","121.1","118.4","ATIS","7 25"],["KHIF","Hill Air Force Base","Ogden","UT","121.6","127.15","134.925","ATIS","14 32"],["KHIO","Portland Hillsboro Airport","Portland","OR","121.7","119.3","127.65","ATIS","2 13L 13R 20 31L 31R"],["KHKS","Hawkins Field","Jackson","MS","121.9","119.65","120.625","ASOS","11 16 29 34"],["KHKY","Hickory Regional Airport","Hickory","NC","121.7","128.15","118.325","ASOS","6 24"],["KHLG","Wheeling Ohio County Airport","Wheeling","WV","121.75","118.1","127.375","ASOS","3 16 21 34"],["KHLN","Helena Regional Airport","Helena","MT","121.9","118.3","120.4","ATIS","5 9 16 23 27 34"],["KHMN","Holloman Air Force Base","Alamogordo","NM","127.05","119.3","27.35","ATIS","4 7 16 22 25 34"],["KHND","Henderson Executive Airport","Las Vegas","NV","127.8","125.1","120.775","ASOS","17L 17R 35L 35R"],["KHOB","Lea County Regional Airport","Hobbs","NM","121.9","120.65","119.75","ATIS","4 13 17 22 31 35"],["KHOP","Campbell Army Airfield (Fort Campbell)","Fort Campbell","KY","121.8","120.9","125.175","ATIS","5 18 23 36"],["KHOU","William P. Hobby Airport","Houston","TX","121.9","118.7","124.6","ATIS","4 13L 13R 22 31L 31R"],["KHPN","Westchester County Airport","White Plains","NY","121.825","118.575","133.8","ATIS","11 16 29 34"],["KHRL","Valley International Airport","Harlingen","TX","121.7","119.3","124.85","ATIS","13 18L 18R 31 36L 36R"],["KHRT","Hurlburt Field","Mary Esther","FL","123.975","126.5","36.067","ATIS","18 36"],["KHSA","Stennis International Airport","Bay St Louis","MS","121.725","127.15","118.375","AWOS","18 36"],["KHST","Homestead Air Reserve Base","Homestead","FL","121.75","133.45","132.275","ATIS","5 23"],["KHSV","Huntsville International Airport","Huntsville","AL","121.9","127.6","121.25","ATIS","18L 18R 36L 36R"],["KHTS","Tri-State Airport / Milton J. Ferguson Field","Huntington","WV","121.9","118.5","125.2","ATIS","12 30"],["KHUA","Redstone Army Air Field","Redstone Arsnl Huntsville","AL","","126.95","","","17 35"],["KHUF","Terre Haute Regional Airport, Hulman Field","Terre Haute","IN","121.6","134.725","127.5","ATIS","5 14 23 32"],["KHUM","Houma Terrebonne Airport","Houma","LA","121.8","125.3","120.25","ATIS","12 18 30 36"],["KHUT","Hutchinson Municipal Airport","Hutchinson","KS","121.9","118.5","124.25","ATIS","4 13 17 22 31 35"],["KHVN","Tweed New Haven Airport","New Haven","CT","121.7","124.8","133.65","ATIS","2 20"],["KHWD","Hayward Executive Airport","Hayward","CA","121.4","118.9","126.7","ATIS","10L 10R 28L 28R"],["KHWO","North Perry Airport","Hollywood","FL","120.45","132.1","135.475","ATIS","1L 1R 10L 10R 19L 19R 28L 28R"],["KHXD","Hilton Head Airport","Hilton Head Island","SC","121.1","118.975","121.4","ATIS","3 21"],["KHYA","Cape Cod Gateway Airport","Hyannis","MA","121.9","119.5","123.8","ATIS","6 15 24 33"],["KIAB","McConnell Air Force Base","Wichita","KS","118","127.25","124.65","ATIS","1L 1R 19L 19R"],["KIAD","Washington Dulles International Airport","Dulles","VA","121.9","120.1","134.85","ATIS","1C 1L 1R 12 19C 19L 19R 30"],["KIAG","Niagara Falls International Airport","Niagara Falls","NY","121.7","118.5","120.8","ATIS","6 10 24 28"],["KIAH","George Bush Intercontinental Airport","Houston","TX","118.575","29.02","124.05","ATIS","8L 8R 9 15L 15R 26L 26R 27 33L 33R"],["KICT","Wichita Dwight D. Eisenhower National Airport","Wichita","KS","121.9","118.2","125.15","ATIS","1L 1R 14 19L 19R 32"],["KIDA","Idaho Falls Regional Airport","Idaho Falls","ID","121.7","118.5","135.325","ATIS","2 17 20 35"],["KIFP","Laughlin Bullhead International Airport","Bullhead City","AZ","118.25","123.9","","","16 34"],["KILG","Wilmington Airport","Wilmington","DE","121.7","126","123.95","ATIS","1 9 14 19 27 32"],["KILM","Wilmington International Airport","Wilmington","NC","","119.9","124.975","ATIS","6 17 24 35"],["KILN","Wilmington Airpark","Wilmington","OH","121.6","119.475","124.925","ATIS","4L 4R 22L 22R"],["KIND","Indianapolis International Airport","Indianapolis","IN","121.8","120.9","134.25","ATIS","5L 5R 14 23L 23R 32"],["KINS","Creech Air Force Base","Indian Springs","NV","118.3","118.3","121.125","ASOS","8 13 26 31"],["KINT","Smith Reynolds Airport","Winston Salem","NC","128.25","123.75","121.3","ATIS","4 15 22 33"],["KIPT","Williamsport Regional Airport","Williamsport","PA","121.9","119.1","125.225","ASOS","9 12 27 30"],["KISM","Kissimmee Gateway Airport","Orlando","FL","121.7","124.45","128.775","ATIS","6 15 24 33"],["KISO","Kinston Regional Jetport At Stallings Field","Kinston","NC","121.9","120.6","132.75","AWOS","5 23"],["KISP","Long Island MacArthur Airport","Islip","NY","135.3","119.3","120.725","ATIS","6 15L 15R 24 33L 33R"],["KITH","Ithaca Tompkins Regional Airport","Ithaca","NY","121.8","119.6","125.175","ATIS","14 15 32 33"],["KIWA","Mesa Gateway Airport","Mesa","AZ","128.25","118.8","133.5","ATIS","12C 12L 12R 30C 30L 30R"],["KIXD","New Century AirCenter Airport","New Century","KS","124.3","133","135.325","ASOS","4 18 22 36"],["KJAC","Jackson Hole Airport","Jackson","WY","124.55","118.075","120.625","ATIS","1 19"],["KJAN","Jackson-Medgar Wiley Evers International Airport","Jackson","MS","121.7","120.9","121.05","ATIS","16L 16R 34L 34R"],["KJAX","Jacksonville International Airport","Jacksonville","FL","121.9","118.3","125.85","ATIS","8 14 26 32"],["KJEF","Jefferson City Memorial Airport","Jefferson City","MO","121.7","125.6","133.625","ASOS","9 12 27 30"],["KJFK","John F. Kennedy International Airport","New York","NY","121.65","119.1","115.1","ATIS","4L 4R 13L 13R 22L 22R 31L 31R"],["KJLN","Joplin Regional Airport","Joplin","MO","121.6","119.8","120.85","ATIS","13 18 31 36"],["KJQF","Concord-Padgett Regional Airport","Concord","NC","121.85","134.65","133.675","AWOS","2 20"],["KJST","John Murtha Johnstown Cambria County Airport","Johnstown","PA","121.6","125.75","118.325","ATIS","5 15 23 33"],["KJVL","Southern Wisconsin Regional Airport","Janesville","WI","121.65","118.8","128.25","ATIS","4 14 18 22 32 36"],["KJXN","Jackson County Airport/Reynolds Field","Jackson","MI","121.9","120.7","125.725","ATIS","7 14 25 32"],["KLAF","Purdue University Airport","West Lafayette","IN","121.9","119.6","127.75","ATIS","5 10 23 28"],["KLAL","Lakeland Linder International Airport","Lakeland","FL","121.4","124.5","118.025","ATIS","5 10 23 28"],["KLAN","Capital Region International Airport","Lansing","MI","121.9","119.9","119.75","ATIS","6 10L 10R 24 28L 28R"],["KLAS","Harry Reid International Airport","Las Vegas","NV","121.1","119.9","132.4","ATIS","1L 1R 8L 8R 19L 19R 26L 26R"],["KLAW","Lawton Fort Sill Regional Airport","Lawton","OK","121.9","119.9","120.75","ATIS","17 35"],["KLAX","Los Angeles International Airport","Los Angeles","CA","121.65","119.8","133.8","ATIS","6L 6R 7L 7R 24L 24R 25L 25R"],["KLBB","Lubbock Preston Smith International Airport","Lubbock","TX","121.9","120.5","125.3","ATIS","8 17L 17R 26 35L 35R"],["KLBE","Arnold Palmer Regional Airport","Latrobe","PA","121.8","125","118.375","ATIS","6 24"],["KLCH","Lake Charles Regional Airport","Lake Charles","LA","121.8","120.7","118.75","ATIS","5 15 23 33"],["KLCK","Rickenbacker International Airport","Columbus","OH","121.85","120.05","132.75","AWOS","5L 5R 23L 23R"],["KLCQ","Lake City Gateway Airport","Lake City","FL","121.9","119.2","120.675","AWOS","5 10 23 28"],["KLEB","Lebanon Municipal Airport","Lebanon","NH","121.6","125.95","118.65","ATIS","7 18 25 36"],["KLEE","Leesburg International Airport","Leesburg","FL","121.725","119.35","134.325","ATIS","4 13 22 31"],["KLEX","Blue Grass Airport","Lexington","KY","121.9","119.1","126.3","ATIS","4 9 22 27"],["KLFI","Langley Air Force Base","Hampton","VA","121.7","125","27.01","ATIS","8 26"],["KLFT","Lafayette Regional Airport","Lafayette","LA","121.8","118.5","134.05","ATIS","4L 4R 11 22L 22R 29"],["KLGA","LaGuardia Airport","New York","NY","121.7","118.7","125.95","ATIS","4 13 22 31"],["KLGB","Long Beach International Airport","Long Beach","CA","133","119.4","127.75","ATIS","8L 8R 12 26L 26R 30"],["KLHW","MidCoast Regional Airport at Wright Army Airfield","Hinesville","GA","121.7","38.5","","","6L 6R 15L 15R 24L 24R 33L 33R"],["KLIT","Bill & Hillary Clinton National Airport/Adams Field","Little Rock","AR","121.9","118.7","125.65","ATIS","4L 4R 18 22L 22R 36"],["KLMT","Crater Lake-Klamath Regional Airport","Klamath Falls","OR","121.9","118.2","126.5","ATIS","7 14 25 32"],["KLNK","Lincoln Airport","Lincoln","NE","121.9","118.5","118.05","ATIS","14 17 18 32 35 36"],["KLNS","Lancaster Airport","Lancaster","PA","121.8","120.9","125.675","ATIS","8 13 26 31"],["KLOU","Bowman Field","Louisville","KY","121.8","119.5","112.2","ATIS","6 15 24 33"],["KLRD","Laredo International Airport","Laredo","TX","121.8","120.1","125.775","ATIS","14 18L 18R 32 36L 36R"],["KLRF","Little Rock Air Force Base","Jacksonville","AR","132.8","120.6","25.11","ATIS","7 25"],["KLSE","La Crosse Regional Airport","La Crosse","WI","121.8","118.45","124.95","ATIS","4 13 18 22 31 36"],["KLSF","Lawson Army Air Field","Fort Benning","GA","121.05","119.05","134.375","ATIS","15 33"],["KLSV","Nellis Air Force Base","Las Vegas","NV","121.8","132.55","27.01","ATIS","3L 3R 21L 21R"],["KLTS","Altus Air Force Base","Altus","OK","121.85","119.65","27.35","ATIS","18L 18R 36L 36R"],["KLUF","Luke Air Force Base","Glendale","AZ","133.175","119.1","134.925","ATIS","3L 3R 21L 21R"],["KLUK","Cincinnati Municipal Airport Lunken Field","Cincinnati","OH","121.9","118.7","120.25","ATIS","3L 3R 7 21L 21R 25"],["KLVK","Livermore Municipal Airport","Livermore","CA","121.6","118.1","119.65","ATIS","7L 7R 25L 25R"],["KLWB","Greenbrier Valley Airport","Lewisburg","WV","121.9","118.9","121.4","AWOS","4 22"],["KLWM","Lawrence Municipal Airport","Lawrence","MA","124.3","119.25","126.75","ATIS","5 14 23 32"],["KLWS","Lewiston Nez Perce County Airport","Lewiston","ID","121.9","119.4","135.575","ASOS","8 12 26 30"],["KLYH","Lynchburg Regional Airport - Preston Glenn Field","Lynchburg","VA","121.9","127.65","119.8","ATIS","4 17 22 35"],["KLZU","Gwinnett County Briscoe Field","Lawrenceville","GA","121.8","124.1","132.275","ATIS","7 25"],["KMAF","Midland International Air and Space Port","Midland","TX","121.9","118.7","126.8","ATIS","4 10 16L 16R 22 28 34L 34R"],["KMBS","MBS International Airport","Freeland","MI","121.7","120.1","118.6","ATIS","5 14 23 32"],["KMCF","MacDill Air Force Base","Tampa","FL","118.575","123.7","133.825","ATIS","4 22"],["KMCI","Kansas City International Airport","Kansas City","MO","121.65","125.75","126.625","ATIS","1L 1R 9 19L 19R 27"],["KMCN","Middle Georgia Regional Airport","Macon","GA","121.65","128.2","120.775","ATIS","5 14 23 32"],["KMCO","Orlando International Airport","Orlando","FL","121.8","118.45","121.25","ATIS","17L 17R 18L 18R 35L 35R 36L 36R"],["KMDH","Southern Illinois Airport","Murphysboro","IL","121.8","125.35","119.85","ATIS","6 18L 18R 24 36L 36R"],["KMDT","Harrisburg International Airport","Harrisburg","PA","121.7","124.8","118.8","ATIS","13 31"],["KMDW","Chicago Midway International Airport","Chicago","IL","121.65","118.7","132.75","ATIS","4L 4R 13L 13R 22L 22R 31L 31R"],["KMEI","Key Field / Meridian Regional Airport","Meridian","MS","121.9","119.8","126.475","ATIS","1 4 19 22"],["KMEM","Frederick W. Smith International Airport","Memphis","TN","121.65","118.3","127.75","ATIS","9 18C 18L 18R 27 36C 36L 36R"],["KMFD","Mansfield Lahm Regional Airport","Mansfield","OH","121.8","119.8","125.3","ATIS","5 14 23 32"],["KMFE","McAllen Miller International Airport","McAllen","TX","121.8","118.5","128.5","ATIS","13 18 31 36"],["KMFR","Rogue Valley International-Medford Airport","Medford","OR","121.8","119.4","127.25","ATIS","14 32"],["KMGE","Dobbins Air Reserve Base","Marietta","GA","125.3","120.75","26.95","ATIS","11 29"],["KMGM","Montgomery Regional (Dannelly Field) Airport","Montgomery","AL","121.7","119.7","120.675","ATIS","3 10 21 28"],["KMGW","Morgantown Municipal Airport Walter L. (Bill) Hart Field","Morgantown","WV","121.7","125.1","120.675","ASOS","18 36"],["KMHK","Manhattan Regional Airport","Manhattan","KS","121.85","118.55","119.075","ASOS","3 13 21 31"],["KMHR","Sacramento Mather Airport","Sacramento","CA","121.85","120.65","118.325","ATIS","4L 4R 22L 22R"],["KMHT","Manchester-Boston Regional Airport","Manchester","NH","121.9","121.3","119.55","ATIS","6 17 24 35"],["KMHV","Mojave Air &  Space Port","Mojave","CA","123.9","127.6","","","4 8 12 22 26 30"],["KMIA","Miami International Airport","Miami","FL","121.8","118.3","119.15","ATIS","8L 8R 9 12 26L 26R 27 30"],["KMIB","Minot Air Force Base","Minot","ND","134","120.65","27.88","ATIS","11 29"],["KMIC","Crystal Airport","Minneapolis","MN","121.6","120.7","124.475","ATIS","6L 6R 14 24L 24R 32"],["KMIE","Delaware County Johnson Field","Muncie","IN","121.9","120.1","133.25","ATIS","3 14 21 32"],["KMKC","Charles B. Wheeler Downtown Airport","Kansas City","MO","121.9","133.3","120.75","ATIS","1 4 19 22"],["KMKE","General Mitchell International Airport","Milwaukee","WI","121.8","119.1","126.4","ATIS","1L 1R 7L 7R 13 19L 19R 25L 25R 31"],["KMKG","Muskegon County Airport","Muskegon","MI","121.6","126.25","124.3","ATIS","6 14 24 32"],["KMKL","McKellar-Sipes Regional Airport","Jackson","TN","120.9","127.15","119.325","ASOS","2 11 20 29"],["KMLB","Melbourne Orlando International Airport","Melbourne","FL","121.9","118.2","132.55","ATIS","5 9L 9R 23 27L 27R"],["KMLI","Quad City International Airport","Moline","IL","121.9","119.4","121.2","ATIS","5 9 13 23 27 31"],["KMLU","Monroe Regional Airport","Monroe","LA","121.9","118.9","125.05","ATIS","4 14 22 32"],["KMMT","Mc Entire Joint National Guard Base","Eastover","SC","127.625","132.4","","","5 14 23 32"],["KMMU","Morristown Municipal Airport","Morristown","NJ","121.7","118.1","124.25","ATIS","5 13 23 31"],["KMOB","Mobile Regional Airport","Mobile","AL","121.9","118.3","124.75","ATIS","15 18 33 36"],["KMOD","Modesto City Co-Harry Sham Field","Modesto","CA","121.7","125.3","127.7","ATIS","10L 10R 28L 28R"],["KMOT","Minot International Airport","Minot","ND","121.9","118.2","","","8 13 26 31"],["KMQY","Smyrna Airport","Smyrna","TN","121.4","118.5","119.125","ASOS","1 14 19 32"],["KMRB","Eastern WV Regional Airport/Shepherd Field","Martinsburg","WV","121.8","124.3","119.925","ASOS","8 26"],["KMRY","Monterey Regional Airport","Monterey","CA","121.9","118.4","119.25","ATIS","10L 10R 28L 28R"],["KMSN","Dane County Regional Truax Field","Madison","WI","121.9","119.3","124.65","ATIS","3 14 18 21 32 36"],["KMSO","Missoula Montana Airport","Missoula","MT","121.9","118.4","126.65","ATIS","12 30"],["KMSP","Minneapolis\u2013Saint Paul International Airport / Wold\u2013Chamberlain Field","Minneapolis","MN","121.8","123.675","120.8","ATIS","4 12L 12R 17 22 30L 30R 35"],["KMSY","Louis Armstrong New Orleans International Airport","New Orleans","LA","121.9","119.5","127.55","ATIS","2 11 20 29"],["KMTC","Selfridge Air National Guard Base Airport","Mount Clemens","MI","128.3","120.15","125.325","ATIS","1 19"],["KMTN","Martin State Airport","Baltimore","MD","121.8","121.3","124.925","ATIS","15 33"],["KMUI","Muir Army Air Field (Fort Indiantown Gap) Airport","Fort Indiantown Gap(Annville)","PA","121.625","126.2","","","7 25"],["KMUO","Mountain Home Air Force Base","Mountain Home","ID","120.5","133.85","27.35","ATIS","12 30"],["KMVY","Martha's Vineyard Airport","Martha's Vineyard","MA","121.8","121.4","126.25","ATIS","6 15 24 33"],["KMWA","Veterans Airport of Southern Illinois","Marion","IL","121.7","128.4","119.675","AWOS","2 11 20 29"],["KMWC","Lawrence J Timmerman Airport","Milwaukee","WI","121.7","120.5","128.3","ATIS","4L 4R 15L 15R 22L 22R 33L 33R"],["KMWH","Grant County International Airport","Moses Lake","WA","121.9","118.25","119.05","ATIS","4 9 14L 14R 18 22 27 32L 32R 36"],["KMXF","Maxwell Air Force Base","Montgomery","AL","127.15","118.15","134.7","ATIS","15 33"],["KMYF","Montgomery-Gibbs Executive Airport","San Diego","CA","118.22","119.2","126.9","ATIS","5 10L 10R 23 28L 28R"],["KMYR","Myrtle Beach International Airport","Myrtle Beach","SC","120.3","128.45","123.925","ATIS","18 36"],["KNBC","Beaufort MCAS - Merritt Field","Beaufort","SC","","119.05","27.8","ATIS","5 14 23 32"],["KNBG","New Orleans NAS JRB/Alvin Callender Field","New Orleans","LA","121.6","123.8","27.62","ATIS","4 14 22 32"],["KNCA","MCAS New River / McCutcheon Field","Jacksonville","NC","121.8","120","28.832","ATIS","1 5 19 23"],["KNDZ","Whiting Field Naval Air Station South Airport","Milton","FL","34.68","121.4","27.357","ATIS","5 14 23 32"],["KNEL","Lakehurst Maxfield Field Airport","Lakehurst","NJ","118.375","127.775","","","6 15 24 33"],["KNEN","Whitehouse Naval Outlying Field","Jacksonville","FL","","135.4","","","12 30"],["KNEW","Lakefront Airport","New Orleans","LA","121.7","118.95","124.9","ATIS","9 18L 18R 27 36L 36R"],["KNFG","Camp Pendleton MCAS (Munn Field) Airport","Oceanside","CA","128.775","128.775","26.76","ATIS","3 21"],["KNFJ","Choctaw Nolf Airport","Milton","FL","","121.4","28.2","ATIS","18 36"],["KNFL","Fallon Naval Air Station","Fallon","NV","25.115","119.25","37.092","ATIS","7 13L 13R 25 31L 31R"],["KNFW","NAS Fort Worth JRB / Carswell Field","Fort Worth","TX","126.4","120.95","27.357","ATIS","18 36"],["KNGP","Naval Air Station Corpus Christi Truax Field","Corpus Christi","TX","118.7","134.85","114","ATIS","4 13L 13R 17 22 31L 31R 35"],["KNGU","Norfolk Naval Station (Chambers Field)","Norfolk","VA","29.895","124.3","118.425","ATIS","10 28"],["KNGW","Cabaniss Field Naval Outlying Landing Field","Corpus Christi","TX","","119.65","","","13 17 31 35"],["KNHK","Patuxent River Naval Air Station (Trapnell Field)","Patuxent River","MD","120.6","123.7","27.62","ATIS","2 6 14 20 24 32"],["KNID","China Lake Naws (Armitage Field) Airport","China Lake","CA","36.02","120.15","32.237","ATIS","3 8 14 21 26 32"],["KNIP","Jacksonville Naval Air Station (Towers Field)","Jacksonville","FL","128.6","120","28.1","ATIS","10 14 28 32"],["KNJK","El Centro NAF Airport (Vraciu Field)","El Centro","CA","121.9","119.1","26.927","ATIS","8 12 26 30"],["KNJM","Marine Corps Auxiliary Landing Field Bogue","Bogue","NC","26.26","126.45","","","5 23"],["KNJW","Joe Williams Naval Outlying Field","Preston","MS","","118.475","","","13 31"],["KNKT","Cherry Point MCAS / Cunningham Field/","Cherry Point","NC","128.625","121.3","24.487","ATIS","5L 5R 14L 14R 23L 23R 32L 32R"],["KNKX","Miramar Marine Corps Air Station - Mitscher Field","San Diego","CA","128.625","135.2","35.2","ATIS","6L 6R 24L 24R"],["KNLC","Lemoore Naval Air Station (Reeves Field) Airport","Lemoore","CA","121.65","128.3","26.76","ATIS","14L 14R 32L 32R"],["KNMM","Naval Air Station Meridian / McCain Field","Lauderdale","MS","33.64","126.2","27.32","ATIS","1L 1R 10 19L 19R 28"],["KNOG","Orange Grove Naval Auxiliary Landing Field","Orange Grove","TX","","119.35","25.432","ATIS","1 13 19 31"],["KNPA","Naval Air Station Pensacola Forrest Sherman Field","Pensacola","FL","121.7","120.7","26.76","ATIS","1 7L 7R 19 25L 25R"],["KNQA","Millington-Memphis Airport","Millington","TN","121.375","120.25","118.925","AWOS","4 22"],["KNQI","Kingsville Naval Air Station","Kingsville","TX","35.24","124.1","27.62","ATIS","13L 13R 17L 17R 31L 31R 35L 35R"],["KNQX","Naval Air Station Key West/Boca Chica Field","Key West","FL","121.7","126.1","27.72","ATIS","4 8 14 22 26 32"],["KNRB","Naval Station Mayport / Admiral David L McDonald Field","Jacksonville","FL","126.5","118.75","26.86","ATIS","5 23"],["KNRS","Naval Outlying Field Imperial Beach (Ream Field)","Imperial Beach","CA","28.557","120.65","27.62","ATIS","8 9 26 27"],["KNSE","Whiting Field Naval Air Station - North","Milton","FL","25.115","121.4","29.032","ATIS","5 14 23 32"],["KNSI","San Nicolas Island Nolf Airport","San Nicolas Island","CA","","126.85","","","12 30"],["KNTD","Point Mugu Naval Air Station (Naval Base Ventura Co)","Point Mugu","CA","121.6","124.85","125.55","ATIS","3 9 21 27"],["KNTU","Oceana Naval Air Station","Virginia Beach","VA","33.64","127.075","31.76","ATIS","5L 5R 14L 14R 23L 23R 32L 32R"],["KNUC","San Clemente Island Naval Auxiliary Landing Field","San Clemente Island","CA","119.55","126.75","26.86","ATIS","6 24"],["KNUI","Naval Outlying Landing Field Webster","St Inigoes","MD","","126.2","","","8 15 26 33"],["KNUQ","Moffett Federal Airfield","Mountain View","CA","121.85","119.55","124.175","ATIS","14L 14R 32L 32R"],["KNUW","Whidbey Island Naval Air Station (Ault Field)","Oak Harbor","WA","121.75","127.9","134.15","ATIS","7 14 25 32"],["KNWL","Waldron Field Naval Outlying Landing Field","Corpus Christi","TX","","133.85","","","13 17 31 35"],["KNXP","Twentynine Palms Strategic Expeditionary Landing Field","Twentynine Palms","CA","41.7","135.525","38.635","ATIS","10 28"],["KNYG","Quantico Marine Corps Airfield / Turner Field","Quantico","VA","121.75","118.6","26.315","ATIS","2 20"],["KNYL","Yuma International Airport / Marine Corps Air Station Yuma","Yuma","AZ","121.9","119.3","118.8","ATIS","3L 3R 8 21L 21R 26"],["KNZY","North Island Naval Air Station-Halsey Field","San Diego","CA","118","135.1","31.78","ATIS","11 18 29 36"],["KOAK","Oakland San Francisco Bay Airport","Oakland","CA","121.75","118.3","133.775","ATIS","10L 10R 12 15 28L 28R 30 33"],["KOGD","Ogden Hinckley Airport","Ogden","UT","121.7","118.7","125.55","ATIS","3 17 21 35"],["KOJC","Johnson County Executive Airport","Olathe","KS","121.6","126","119.35","ATIS","18 36"],["KOKC","OKC Will Rogers World Airport","Oklahoma City","OK","121.9","119.35","125.85","ATIS","13 17L 17R 18 31 35L 35R 36"],["KOLM","Olympia Regional Airport","Olympia","WA","121.6","124.4","135.375","ATIS","8 17 26 35"],["KOLV","Olive Branch Airport","Olive Branch","MS","121.2","125.275","119.925","ATIS","18 36"],["KOMA","Eppley Airfield","Omaha","NE","121.9","132.1","120.4","ATIS","14L 14R 18 32L 32R 36"],["KOMN","Ormond Beach Municipal Airport","Ormond Beach","FL","","119.075","118.475","ATIS","9 17 27 35"],["KONT","Ontario International Airport","Ontario","CA","121.9","120.6","124.25","ATIS","8L 8R 26L 26R"],["KOPF","Miami-Opa Locka Executive Airport","Miami","FL","121.9","120.7","125.9","ATIS","9L 9R 12 27L 27R 30"],["KOQU","Quonset State Airport","North Kingstown","RI","134.5","126.35","","","5 16 23 34"],["KORD","Chicago O'Hare International Airport","Chicago","IL","121.675","126.9","135.4","ATIS","4L 4R 9C 9L 9R 10C 10L 10R 22L 22R 27C 27L 27R 28C 28L 28R"],["KORF","Norfolk International Airport","Norfolk","VA","121.9","120.8","127.15","ATIS","5 14 23 32"],["KORH","Worcester Regional Airport","Worcester","MA","123.85","120.5","126.55","ATIS","11 15 29 33"],["KORL","Orlando Executive Airport","Orlando","FL","121.4","118.7","127.25","ATIS","7 13 25 31"],["KOSH","Wittman Regional Airport","Oshkosh","WI","121.9","118.5","125.9","ATIS","5 9 13 18 23 27 31 36"],["KOSU","The Ohio State University Airport - Don Scott Field","Columbus","OH","","118.8","121.35","ATIS","5 9L 9R 23 27L 27R"],["KOUN","University of Oklahoma Westheimer Airport","Norman","OK","121.6","118","119.55","AWOS","3 17 21 35"],["KOWB","Owensboro Daviess County Airport","Owensboro","KY","121.7","120.7","","","6 18 24 36"],["KOWD","Norwood Memorial Airport","Norwood","MA","121.8","126","119.95","ATIS","10 17 28 35"],["KOXC","Waterbury Oxford Airport","Oxford","CT","121.65","118.475","132.975","AWOS","18 36"],["KOXR","Oxnard Airport","Oxnard","CA","121.9","134.95","118.05","ATIS","7 25"],["KOZR","Cairns AAF (Fort Rucker) Air Field","Fort Rucker/Ozark","AL","121.9","135.2","111.2","ATIS","6 18 24 36"],["KPAE","Seattle Paine Field International Airport","Everett","WA","121.8","120.2","128.65","ATIS","16L 16R 34L 34R"],["KPAH","Barkley Regional Airport","Paducah","KY","121.7","119.6","118.375","ASOS","4 14 22 32"],["KPAM","Tyndall Air Force Base","Panama City","FL","121.9","133.95","25.44","ATIS","14L 14R 32L 32R"],["KPAO","Palo Alto Airport","Palo Alto","CA","125","118.6","135.275","ATIS","13 31"],["KPDK","DeKalb Peachtree Airport","Atlanta","GA","121.6","120.9","128.4","ATIS","3L 3R 16 21L 21R 34"],["KPDT","Eastern Oregon Regional Airport at Pendleton","Pendleton","OR","121.9","119.7","118.325","ASOS","8 11 26 29"],["KPDX","Portland International Airport","Portland","OR","121.9","118.7","120.625","ATIS","3 10L 10R 21 28L 28R"],["KPHF","Newport News Williamsburg International Airport","Newport News","VA","121.9","124.9","128.65","ATIS","2 7 20 25"],["KPHL","Philadelphia International Airport","Philadelphia","PA","121.9","118.5","133.4","ATIS","8 9L 9R 17 26 27L 27R 35"],["KPHX","Phoenix Sky Harbor International Airport","Phoenix","AZ","119.75","118.7","127.575","ATIS","7L 7R 8 25L 25R 26"],["KPIA","General Wayne A. Downing Peoria International Airport","Peoria","IL","121.85","119.1","126.1","ATIS","4 13 22 31"],["KPIE","St. Petersburg Clearwater International Airport","Pinellas Park","FL","121.9","118.3","134.5","ATIS","4 18 22 36"],["KPIH","Pocatello Regional Airport","Pocatello","ID","121.9","119.1","135.625","ASOS","3 17 21 35"],["KPIT","Pittsburgh International Airport","Pittsburgh","PA","121.9","119.1","127.25","ATIS","10C 10L 10R 14 28C 28L 28R 32"],["KPKB","Mid Ohio Valley Regional Airport","Parkersburg (Williamstown)","WV","121.7","123.7","124.35","ATIS","3 10 21 28"],["KPMD","Palmdale Regional Airport / USAF Plant 42 Airport","Palmdale","CA","121.9","123.7","118.275","ASOS","4 7 22 25"],["KPMP","Pompano Beach Airpark","Pompano Beach","FL","121.9","125.4","120.55","ATIS","6 10 15 24 28 33"],["KPNE","Northeast Philadelphia Airport","Philadelphia","PA","121.7","126.9","121.15","ATIS","6 15 24 33"],["KPNS","Pensacola International Airport","Pensacola","FL","121.9","119.9","121.25","ATIS","8 17 26 35"],["KPOB","Pope Field","Fort Bragg","NC","124.55","135.025","132.3","ATIS","5 23"],["KPOC","Brackett Field","La Verne","CA","125","118.2","124.4","ATIS","8L 8R 26L 26R"],["KPOE","Polk Army Air Field","Fort Polk","LA","121.8","41.5","134.85","ATIS","15 33"],["KPOU","Dutchess County Airport","Poughkeepsie","NY","121.8","124","126.75","ATIS","6 7 15 24 25 33"],["KPQL","Trent Lott International Airport","Pascagoula","MS","121.725","118.575","135.175","ATIS","17 35"],["KPRC","Prescott Regional Airport - Ernest A. Love Field","Prescott","AZ","121.7","125.3","127.2","ATIS","3L 3R 12 21L 21R 30"],["KPSC","Tri Cities Airport","Pasco","WA","121.8","135.3","125.65","ATIS","3L 3R 12 21L 21R 30"],["KPSM","Portsmouth International Airport at Pease","Portsmouth","NH","120.95","128.4","132.05","ATIS","16 34"],["KPSP","Palm Springs International Airport","Palm Springs","CA","121.9","119.7","118.25","ATIS","13L 13R 31L 31R"],["KPTK","Oakland County International Airport","Pontiac","MI","121.9","120.5","125.45","ATIS","9L 9R 18 27L 27R 36"],["KPUB","Pueblo Memorial Airport","Pueblo","CO","121.9","119.1","125.25","ATIS","8L 8R 17 26L 26R 35"],["KPVD","Rhode Island T. F. Green International Airport","Providence/Warwick","RI","121.9","120.7","124.2","ATIS","5 16 23 34"],["KPVU","Provo Municipal Airport","Provo","UT","119.4","125.3","135.175","ATIS","13 18 31 36"],["KPWA","Wiley Post Airport","Oklahoma City","OK","121.7","126.9","128.725","ATIS","13 17L 17R 31 35L 35R"],["KPWK","Chicago Executive Airport","Chicago/Prospect Heights/Wheeling","IL","121.7","119.9","124.2","ATIS","12 16 30 34"],["KPWM","Portland International Jetport","Portland","ME","121.9","120.9","119.05","ATIS","11 18 29 36"],["KRAL","Riverside Municipal Airport","Riverside","CA","121.7","121","128.8","ATIS","9 16 27 34"],["KRAP","Rapid City Regional Airport","Rapid City","SD","121.9","125.85","118.525","ASOS","5 14 23 32"],["KRBD","Dallas Executive Airport","Dallas","TX","121.7","120.3","126.35","ATIS","13 17 31 35"],["KRCA","Ellsworth Air Force Base","Rapid City","SD","121.8","126.05","120.625","ATIS","13 31"],["KRDD","Redding Municipal Airport","Redding","CA","121.7","119.8","124.1","ATIS","12 16 30 34"],["KRDG","Reading Regional Airport (Carl A Spaatz Field)","Reading","PA","121.9","119.9","127.1","ATIS","13 18 31 36"],["KRDM","Roberts Field","Redmond","OR","121.8","124.5","119.025","ASOS","5 11 23 29"],["KRDR","Grand Forks Air Force Base","Grand Forks","ND","119.15","124.9","27.345","ATIS","17 35"],["KRDU","Raleigh-Durham International Airport","Raleigh/Durham","NC","121.7","119.3","123.8","ATIS","5L 5R 14 23L 23R 32"],["KRFD","Chicago Rockford International Airport","Chicago/Rockford","IL","121.9","118.3","126.7","ATIS","1 7 19 25"],["KRHV","Reid-Hillview Airport of Santa Clara County","San Jose","CA","121.65","119.8","125.2","ATIS","13L 13R 31L 31R"],["KRIC","Richmond International Airport","Richmond","VA","121.9","121.1","119.15","ATIS","2 16 20 34"],["KRIV","March Air Reserve Base","Riverside","CA","","127.65","134.75","ATIS","14 32"],["KRND","Randolph Air Force Base","Universal City","TX","119.75","128.25","27.18","ATIS","15L 15R 33L 33R"],["KRNM","Ramona Airport","Ramona","CA","121.65","119.875","132.025","ATIS","9 27"],["KRNO","Reno Tahoe International Airport","Reno","NV","121.9","118.7","135.8","ATIS","8 17L 17R 26 35L 35R"],["KRNT","Renton Municipal Airport","Renton","WA","121.6","124.7","126.95","ATIS","16 34"],["KROA","Roanoke\u2013Blacksburg Regional Airport","Roanoke","VA","121.9","118.3","134.95","ATIS","6 16 24 34"],["KROC","Frederick Douglass Greater Rochester International Airport","Rochester","NY","121.7","118.3","124.825","ATIS","4 7 10 22 25 28"],["KROG","Rogers Municipal Airport-Carter Field","Rogers","AR","","118","134.375","AWOS","2 20"],["KROW","Roswell Air Center Airport","Roswell","NM","121.9","118.5","128.45","ATIS","3 17 21 35"],["KRST","Rochester International Airport","Rochester","MN","121.9","118.3","120.5","ATIS","3 13 21 31"],["KRSW","Southwest Florida International Airport","Fort Myers","FL","121.9","128.75","124.65","ATIS","6 24"],["KRVS","Tulsa Riverside Airport","Tulsa","OK","121.7","119.2","126.5","ATIS","1L 1R 13 19L 19R 31"],["KRYM","Ray S Miller Army Air Field","Fort Ripley","MN","","49.2","148.35","AWOS","13 31"],["KRYN","Ryan Field","Tucson","AZ","118.2","125.8","133.35","AWOS","6L 6R 15 24L 24R 33"],["KRYY","Cobb County International Airport-McCollum Field","Atlanta","GA","119","125.9","128.125","AWOS","9 27"],["KSAC","Sacramento Executive Airport","Sacramento","CA","125","119.5","125.5","ATIS","2 12 16 20 30 34"],["KSAF","Santa Fe Municipal Airport","Santa Fe","NM","121.7","119.5","128.55","ATIS","2 10 15 20 28 33"],["KSAN","San Diego International Airport","San Diego","CA","123.9","118.3","134.8","ATIS","9 27"],["KSAT","San Antonio International Airport","San Antonio","TX","121.9","119.8","118.9","ATIS","4 13L 13R 22 31L 31R"],["KSAV","Savannah Hilton Head International Airport","Savannah","GA","121.9","125.975","123.75","ATIS","1 10 19 28"],["KSAW","Marquette Sawyer Regional Airport","Gwinn","MI","121.65","119.975","118.375","AWOS","1 19"],["KSBA","Santa Barbara Municipal Airport","Santa Barbara","CA","121.7","119.7","132.65","ATIS","7 15L 15R 25 33L 33R"],["KSBD","San Bernardino International Airport","San Bernardino","CA","121.8","119.45","124.175","ATIS","6 24"],["KSBN","South Bend International Airport","South Bend","IN","121.7","135.675","120.675","ATIS","9L 9R 18 27L 27R 36"],["KSBP","San Luis County Regional Airport","San Luis Obispo","CA","121.6","124","120.6","ATIS","7 11 25 29"],["KSBY","Salisbury Ocean City Wicomico Regional Airport","Salisbury","MD","123.775","119.425","118.325","ASOS","5 14 23 32"],["KSCH","Schenectady County Airport","Schenectady","NY","","121.3","119.275","AWOS","4 10 22 28"],["KSCK","Stockton Metropolitan Airport","Stockton","CA","121.9","120.3","118.25","ATIS","11L 11R 29L 29R"],["KSDF","Louisville Muhammad Ali International Airport","Louisville","KY","121.7","124.2","118.725","ATIS","11 17L 17R 29 35L 35R"],["KSDL","Scottsdale Airport","Scottsdale","AZ","121.6","119.9","118.6","ATIS","3 21"],["KSDM","Brown Field Municipal Airport","San Diego","CA","124.4","126.5","132.35","ATIS","8L 8R 26L 26R"],["KSEA","Seattle\u2013Tacoma International Airport","Seattle","WA","121.7","119.9","118","ATIS","16C 16L 16R 34C 34L 34R"],["KSEE","Gillespie Field","San Diego/El Cajon","CA","121.7","120.7","125.45","ATIS","9L 9R 17 27L 27R 35"],["KSFB","Orlando Sanford International Airport","Orlando","FL","121.35","120.3","125.975","ATIS","9C 9L 9R 18 27C 27L 27R 36"],["KSFF","Felts Field","Spokane","WA","121.7","132.5","120.55","ATIS","4L 4R 22L 22R"],["KSFO","San Francisco International Airport","San Francisco","CA","121.8","120.5","113.7","ATIS","1L 1R 10L 10R 19L 19R 28L 28R"],["KSGF","Springfield Branson National Airport","Springfield","MO","121.9","119.9","119.05","ATIS","2 14 20 32"],["KSGH","Springfield-Beckley Municipal Airport","Springfield","OH","121.7","120.7","25.787","ATIS","6 15 24 33"],["KSGJ","Northeast Florida Regional Airport","St Augustine","FL","121.175","127.625","119.625","ATIS","2 6 13 20 24 31"],["KSGR","Sugar Land Regional Airport","Houston","TX","121.4","118.65","118.125","ASOS","17 35"],["KSHV","Shreveport Regional Airport","Shreveport","LA","121.9","121.4","128.45","ATIS","6 14 24 32"],["KSJC","Mineta San Jose International Airport","San Jose","CA","121.7","124","126.95","ATIS","12L 12R 30L 30R"],["KSJT","San Angelo Regional Mathis Field","San Angelo","TX","121.9","118.3","128.45","ATIS","3 9 18 21 27 36"],["KSKA","Fairchild Air Force Base","Spokane","WA","121.85","126.2","25.762","ATIS","5 23"],["KSKF","Lackland Air Force Base","San Antonio","TX","121.8","124.3","120.45","ATIS","16 34"],["KSLC","Salt Lake City International Airport","Salt Lake City","UT","121.9","118.3","124.75","ATIS","16L 16R 17 34L 34R 35"],["KSLE","Salem-Willamette Valley Airport/McNary Field","Salem","OR","121.9","119.1","124.55","ATIS","13 16 31 34"],["KSLI","Los Alamitos Army Air Field","Los Alamitos","CA","126.95","123.85","","","4L 4R 22L 22R"],["KSLN","Salina Municipal Airport","Salina","KS","121.9","119.3","120.15","ATIS","4 12 17 18 22 30 35 36"],["KSMF","Sacramento International Airport","Sacramento","CA","121.7","125.7","126.75","ATIS","17L 17R 35L 35R"],["KSMO","Santa Monica Municipal Airport","Santa Monica","CA","121.9","120.1","119.15","ATIS","3 21"],["KSMX","Santa Maria Public Airport Captain G Allan Hancock Field","Santa Maria","CA","121.9","118.3","121.15","ATIS","2 12 20 30"],["KSNA","John Wayne Orange County International Airport","Santa Ana","CA","120.8","119.9","126","ATIS","2L 2R 20L 20R"],["KSNS","Salinas Municipal Airport","Salinas","CA","121.7","119.4","124.85","ATIS","8 13 26 31"],["KSPG","Albert Whitted Airport","St Petersburg","FL","121.8","127.4","118.875","ASOS","7 18 25 36"],["KSPI","Abraham Lincoln Capital Airport","Springfield","IL","121.9","121.3","127.65","ATIS","4 13 18 22 31 36"],["KSPS","Wichita Falls Municipal Airport / Sheppard Air Force Base","Wichita Falls","TX","125.5","119.75","132.05","ATIS","15C 15L 15R 17 33C 33L 33R 35"],["KSQL","San Carlos Airport","San Carlos","CA","121.6","119","125.9","ATIS","12 30"],["KSRQ","Sarasota Bradenton International Airport","Sarasota/Bradenton","FL","121.9","120.1","134.15","ATIS","4 14 22 32"],["KSSC","Shaw Air Force Base","Sumter","SC","126.1","126.65","132.125","ATIS","4L 4R 22L 22R"],["KSSF","Stinson Municipal Airport","San Antonio","TX","121.7","118.2","128.8","ATIS","9 14 27 32"],["KSTC","Saint Cloud Regional Airport","Saint Cloud","MN","121.6","118.25","119.375","ATIS","5 13 23 31"],["KSTJ","Rosecrans Memorial Airport","St Joseph","MO","121.9","126.9","125.05","ATIS","13 17 31 35"],["KSTL","St. Louis Lambert International Airport","St Louis","MO","118.925","118.5","125.025","ATIS","6 11 12L 12R 24 29 30L 30R"],["KSTP","Saint Paul Downtown Holman Field","Saint Paul","MN","","119.1","118.35","ATIS","9 13 14 27 31 32"],["KSTS","Charles M. Schulz Sonoma County Airport","Santa Rosa","CA","121.9","118.5","120.55","ATIS","2 14 20 32"],["KSUA","Witham Field","Stuart","FL","121.7","126.6","134.475","ATIS","7 12 16 25 30 34"],["KSUN","Friedman Memorial Airport","Hailey","ID","121.7","125.6","128.225","ATIS","13 31"],["KSUS","Spirit of St Louis Airport","St Louis","MO","121.7","122.6","134.8","ATIS","8L 8R 26L 26R"],["KSUU","Travis Air Force Base","Fairfield","CA","121.8","120.75","116.4","ATIS","3L 3R 21L 21R"],["KSUX","Sioux Gateway Airport / Brigadier General Bud Day Field","Sioux City","IA","121.9","118.7","119.45","ATIS","13 17 31 35"],["KSVN","Hunter Army Air Field","Savannah","GA","121.8","46.7","32.312","ATIS","10 28"],["KSWF","New York Stewart International Airport","Newburgh","NY","121.9","121","124.575","ATIS","9 16 27 34"],["KSWO","Stillwater Regional Airport","Stillwater","OK","121.6","125.35","135.725","ASOS","4 17 22 35"],["KSYR","Syracuse Hancock International Airport","Syracuse","NY","121.7","120.3","132.05","ATIS","10 15 28 33"],["KSZL","Whiteman Air Force Base","Knob Noster","MO","128.275","132.4","139.3","ATIS","1 19"],["KTBN","Waynesville-St. Robert Regional Airport-Forney Field","Fort Leonard Wood","MO","","125.4","118.7","ATIS","15 33"],["KTCL","Tuscaloosa National Airport","Tuscaloosa","AL","121.8","126.3","132.825","ASOS","4 12 22 30"],["KTCM","McChord Air Force Base","Tacoma","WA","125.15","124.8","27.01","ATIS","16 34"],["KTEB","Teterboro Airport","Teterboro","NJ","121.9","119.5","132.025","ATIS","1 6 19 24"],["KTIK","Tinker Air Force Base","Oklahoma City","OK","121.8","124.45","27.01","ATIS","13 18 31 36"],["KTIW","Tacoma Narrows Airport","Tacoma","WA","121.8","118.5","124.05","ATIS","17 35"],["KTIX","Space Coast Regional Airport","Titusville","FL","121.85","118.9","120.625","ATIS","9 18 27 36"],["KTKI","McKinney National Airport","Dallas","TX","121.875","118.825","119.925","ASOS","18 36"],["KTLH","Tallahassee International Airport","Tallahassee","FL","121.9","118.7","119.45","ATIS","9 18 27 36"],["KTMB","Miami Executive Airport","Miami","FL","121.7","118.9","124","ATIS","9L 9R 13 27L 27R 31"],["KTNX","Tonopah Test Range Airport","Tonopah","NV","","134.1","","","15 33"],["KTOA","Zamperini Field","Torrance","CA","120.9","124","125.6","ATIS","11L 11R 29L 29R"],["KTOI","Troy Municipal Airport at N Kenneth Campbell Field","Troy","AL","121.9","124.3","120.925","ATIS","7 14 25 32"],["KTOL","Eugene F. Kranz Toledo Express Airport","Toledo","OH","121.9","118.1","118.75","ATIS","7 16 25 34"],["KTOP","Philip Billard Municipal Airport","Topeka","KS","121.9","118.7","121.275","ASOS","4 13 18 22 31 36"],["KTPA","Tampa International Airport","Tampa","FL","121.7","119.5","126.45","ATIS","1L 1R 10 19L 19R 28"],["KTRI","Tri-Cities Regional TN/VA Airport","Blountville","TN","121.7","119.5","118.25","ATIS","5 9 23 27"],["KTRK","Truckee Tahoe Airport","Truckee","CA","118.3","120.575","118","AWOS","2 11 20 29"],["KTTD","Portland Troutdale Airport","Portland","OR","121.8","120.9","135.625","ASOS","7 25"],["KTTN","Trenton Mercer Airport","Ewing Township","NJ","121.9","120.7","126.775","ATIS","6 16 24 34"],["KTTS","Space Florida Launch and Landing Facility","Titusville","FL","121.75","128.55","","","15 33"],["KTUL","Tulsa International Airport","Tulsa","OK","121.9","118.7","124.9","ATIS","8 18L 18R 26 36L 36R"],["KTUP","Tupelo Regional Airport","Tupelo","MS","121.825","118.775","133.525","ASOS","18 36"],["KTUS","Tucson International Airport","Tucson","AZ","124.4","118.3","123.8","ATIS","4 12 22 30"],["KTVC","Cherry Capital Airport","Traverse City","MI","121.8","124.2","119.175","ATIS","10 18 28 36"],["KTWF","Joslin Field Magic Valley Regional Airport","Twin Falls","ID","121.7","118.2","135.025","ASOS","8 12 26 30"],["KTXK","Texarkana Regional Airport (Webb Field)","Texarkana","AR","121.7","125.7","120.2","ATIS","4 13 22 31"],["KTYR","Tyler Pounds Regional Airport","Tyler","TX","121.9","120.1","126.25","ATIS","4 13 18 22 31 36"],["KTYS","McGhee Tyson Airport","Knoxville/Maryville","TN","121.9","121.2","128.35","ATIS","5L 5R 23L 23R"],["KTZR","Bolton Field","Columbus","OH","121.8","128.1","135.925","AWOS","4 22"],["KUES","Waukesha County Airport","Waukesha","WI","121.6","123.7","118.875","ATIS","10 18 28 36"],["KUGN","Waukegan National Airport","Chicago/Waukegan","IL","121.65","120.05","132.4","ATIS","5 14 23 32"],["KVAD","Moody Air Force Base","Valdosta","GA","120.625","128.45","27.35","ATIS","1L 1R 19L 19R"],["KVBG","Vandenberg Space Force Base","Lompoc","CA","","124.95","133.125","ATIS","12 30"],["KVCV","Southern California Logistics Airport","Victorville","CA","124.45","118.35","109.4","AWOS","3 17 21 35"],["KVGT","North Las Vegas Airport","Las Vegas","NV","121.7","125.7","118.05","ATIS","7 12L 12R 25 30L 30R"],["KVLD","Valdosta Regional Airport","Valdosta","GA","121.7","120.9","126.225","ASOS","4 18 22 36"],["KVNY","Van Nuys Airport","Van Nuys","CA","121.7","119.3","118.45","ATIS","16L 16R 34L 34R"],["KVOK","Volk Field","Camp Douglas","WI","121.9","127.5","","","9 27"],["KVPS","Destin-Fort Walton Beach Airport","Valparaiso","FL","121.8","118.2","134.625","ATIS","2 12 20 30"],["KVQQ","Cecil Airport","Jacksonville","FL","121.625","126.1","125.275","ATIS","9L 9R 18L 18R 27L 27R 36L 36R"],["KVRB","Vero Beach Regional Airport","Vero Beach","FL","127.45","126.3","120.575","ATIS","4 12L 12R 22 30L 30R"],["KVUJ","Stanly County Airport","Albemarle","NC","121.75","126.275","128.175","AWOS","4L 4R 22L 22R"],["KWAL","Wallops Flight Facility Airport","Wallops Island","VA","","126.5","119.175","ASOS","4 10 17 22 28 35"],["KWDG","Enid Woodring Regional Airport","Enid","OK","121.925","118.9","120.625","AWOS","13 17 31 35"],["KWHP","Whiteman Airport","Pacoima","CA","125","135","132.1","ATIS","12 30"],["KWJF","General William J Fox Airfield","Lancaster","CA","121.7","120.3","126.3","ATIS","6 24"],["KWRB","Robins Air Force Base","Warner Robins","GA","121.85","133.225","119.475","ATIS","15 33"],["KWRI","Mc Guire Air Force Base","Wrightstown","NJ","121.8","118.65","110.6","ATIS","6 18 24 36"],["KXMR","Cape Canaveral SFS Skid Strip","Cocoa Beach","FL","","118.625","","","13 31"],["KXNA","Northwest Arkansas National Airport","Fayetteville/Springdale/Rogers","AR","121.9","127.1","119.425","ASOS","16L 16R 34L 34R"],["KXNO","North Air Force Auxillary Airfield","North","SC","118.15","118.15","","","5 6 23 24"],["KYIP","Willow Run Airport","Detroit","MI","121.75","125.275","127.425","ATIS","5 9 23 27"],["KYKM","Yakima Air Terminal McAllister Field","Yakima","WA","121.9","133.25","125.25","ATIS","4 9 22 27"],["KYNG","Youngstown Warren Regional Airport","Youngstown/Warren","OH","121.9","119.5","123.75","ATIS","5 14 23 32"],["PABE","Bethel Airport","Bethel","AK","121.7","118.7","119.8","ATIS","1L 1R 12 19L 19R 30"],["PABI","Allen Army Airfield","Delta Junction Ft Greely","AK","118.225","125.325","132.075","ATIS","1 7 10 19 25 28"],["PADQ","Kodiak Airport","Kodiak","AK","121.9","119.8","135.5","ATIS","1 8 11 19 26 29"],["PAED","Elmendorf Air Force Base","Anchorage","AK","121.8","127.2","124.3","ATIS","6 17 24 35"],["PAEI","Eielson Air Force Base","Fairbanks","AK","121.8","127.2","27.35","ATIS","14 32"],["PAEN","Kenai Municipal Airport","Kenai","AK","118.75","121.3","133.35","ATIS","2L 2R 20L 20R"],["PAFA","Fairbanks International Airport","Fairbanks","AK","121.9","118.3","124.4","ATIS","2 2L 2R 20 20L 20R"],["PAFB","Ladd Army Airfield","Fairbanks","AK","121.7","125","134.25","ATIS","7 25"],["PAJN","Juneau International Airport","Juneau","AK","121.9","118.7","135.2","ATIS","8 26"],["PAKN","King Salmon Airport","King Salmon","AK","121.9","118.3","128.8","ATIS","12 18 30 36"],["PAMR","Merrill Field","Anchorage","AK","121.7","126","124.25","ATIS","4 8 17 22 26 35"],["PANC","Ted Stevens Anchorage International Airport","Anchorage","AK","121.9","118.3","118.4","ATIS","7L 7R 15 25L 25R 33"],["PGSN","Saipan International Airport","I Fadang, Saipan","MP","121.8","125.7","127.2","ATIS","7 25"],["PGUA","Andersen Air Force Base","Yigo","GU","121.7","126.2","118.175","ATIS","6L 6R 24L 24R"],["PGUM","Antonio B. Won Pat International Airport","Hag\u00e5t\u00f1a","GU","121.9","118.1","119","ATIS","6L 6R 24L 24R"],["PHBK","Barking Sands Airport","Kekaha","HI","","126.2","","","16 34"],["PHHI","Wheeler Army Airfield","Wahiawa","HI","41.5","126.3","119.675","ATIS","6 24"],["PHJR","Kalaeloa Airport","Kapolei","HI","123.8","132.6","119.8","ATIS","4L 4R 11 22L 22R 29"],["PHKO","Ellison Onizuka Kona International Airport at Ke\u0101hole","Kailua-Kona","HI","","120.3","127.4","ATIS","17 35"],["PHLI","Lihue Airport","Lihue, Kauai","HI","121.9","118.9","127.2","ATIS","3 17 21 35"],["PHMK","Molokai Airport","Kaunakakai","HI","121.9","125.7","128.2","ATIS","5 17 23 35"],["PHNG","Kaneohe Bay MCAS (Marion E. Carl Field) Airport","Kaneohe","HI","38.28","120.7","28.45","ATIS","4 22"],["PHNL","Daniel K. Inouye International Airport","Honolulu, Oahu","HI","121.9","118.1","127.9","ATIS","4L 4R 8L 8R 22L 22R 26L 26R"],["PHOG","Kahului International Airport","Kahului","HI","121.9","118.7","128.6","ATIS","2 5 20 23"],["PHSF","Bradshaw Army Airfield","Waimea (Kamuela)","HI","","41.5","124.7","ATIS","9 27"],["PHTO","Hilo International Airport","Hilo","HI","121.9","118.1","126.4","ATIS","3 8 21 26"],["TIST","Cyril E. King Airport","Charlotte Amalie","VI","121.9","118.1","124","ATIS","10 28"],["TISX","Henry E. Rohlsen Airport","Christiansted","VI","121.7","118.6","135.65","ATIS","10 28"],["TJIG","Fernando Luis Ribas Dominicci Airport","San Juan","PR","121.7","135.875","120.4","ATIS","9 27"],["TJSJ","Luis Munoz Marin International Airport","San Juan","PR","121.9","132.05","125.8","ATIS","8 10 26 28"]];
+(function(){
+const $=id=>document.getElementById(id);
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const ri=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const chance=p=>Math.random()<p;
+const LET=["Alpha","Bravo","Charlie","Delta","Echo","Foxtrot","Golf","Hotel","India","Juliett","Kilo","Lima","Mike","November","Oscar","Papa","Quebec","Romeo","Sierra","Tango","Uniform","Victor","Whiskey","X-ray","Yankee","Zulu"];
+const PH={};LET.forEach(w=>PH[w[0]]=w.toLowerCase());
+const cap=s=>s?s[0].toUpperCase()+s.slice(1):s;
+function oppR(r){const m=String(r).match(/^(\d+)([LRC]?)$/);if(!m)return r;const n=(+m[1]+17)%36+1;return n+({L:"R",R:"L",C:"C"}[m[2]]||"");}
+
+// ---------- configuration
+const DEFAULT={apt:"KISM",fac:"Kissimmee",park:"Spectrum",type:"Cessna",tail:"483E",rwy:"15",dir:"left",route:"Foxtrot, Bravo, Delta",hold:"Delta 1",
+  cross:"",inter:"Delta 2",exit:"Bravo",exitdir:"left",back:"Bravo, Foxtrot",alt:"6",altroute:"Foxtrot, Bravo"};
+let K=Object.assign({},DEFAULT);
+try{const s=JSON.parse(localStorage.getItem("rb_cfg")||"null");if(s&&s.apt)K=Object.assign({},DEFAULT,s);}catch(e){}
+const aptOf=id=>APTS.find(a=>a[0]===id);
+let AP=aptOf(K.apt)||aptOf("KISM");
+const rwys=()=>AP[8].split(" ");
+function guessFac(a){
+  let n=a[1].replace(/\b(International|Intl|Regional|Municipal|Executive|County|Field|Airport|Airpark|Air Park|Airfield|Jetport|Gateway|Memorial|Metropolitan|Air Terminal|Terminal)\b/gi,"").replace(/[\/\-(].*$/,"").replace(/\s+/g," ").trim();
+  if(!n)n=a[2];return n.split(" ").slice(0,2).join(" ");
+}
+const FULL=()=>`${K.type} ${K.tail}`;
+const CS=()=>K.tail;
+const HP=()=>K.hold?` at ${K.hold}`:"";
+const OPP=d=>d==="left"?"right":"left";
+const GND=()=>AP[4]||"121.9", TWRF=()=>AP[5], ATISF=()=>AP[6];
+const ATISL=()=>AP[7]==="ATIS"||!AP[6]?"ATIS":AP[7];
+const aptName=()=>AP[1].replace(/\s*Airport$/i,"");
+const taxiwords=()=>(K.route+","+K.back+","+K.exit).split(/[ ,]+/).filter(w=>LET.includes(cap(w.toLowerCase())));
+
+// ---------- shared random context
+function ctx(){
+  const i=ri(0,24),rn=parseInt(K.rwy)||36;
+  const wd=((rn*10+ri(-3,3)*10+360-1)%360)+1;
+  return {atis:LET[i],next:LET[i+1],alt:(ri(2988,3018)/100).toFixed(2),
+    wind:`${String(wd).padStart(3,"0")} at ${ri(4,11)}`,sq:"0"+ri(2,7)+ri(0,7)+ri(1,7),
+    trf:pick(["Cirrus","Piper","Diamond","Cessna","Cherokee"]),big:pick(["King Air","Citation","Phenom"]),
+    mile:ri(2,4),dir:pick(["west","northwest","southwest","south","east","north"]),dist:pick(["8","10","12"])};
+}
+const SPEC=c=>`${K.fac} Ground, ${FULL()} at ${K.park}, requesting taxi for touch and go's with information ${c.atis}.`;
+const TWRCALL=()=>`${K.fac} Tower, ${FULL()} holding short runway ${K.rwy}${HP()}, ready for touch and go's.`;
+const GNDT=()=>`${K.fac} Ground`, TWRT=()=>`${K.fac} Tower`;
+
+// ---------- other traffic and traps
+const TYPES=["Cirrus","Piper","Diamond","Cherokee","Skyhawk","Bonanza"];
+function otherCS(){const L="ABDFGHJKMNPSTWXYZ";return {t:pick(TYPES),n:ri(1,9)+""+ri(0,9)+L[ri(0,16)]+L[ri(0,16)]};}
+function traps(){
+  const t=K.tail,out=new Set(),m=t.match(/^(\d+)([A-Z]*)$/);
+  if(m&&m[1].length>=2){const d=m[1].split("");[d[d.length-1],d[d.length-2]]=[d[d.length-2],d[d.length-1]];out.add(d.join("")+m[2]);}
+  if(/[A-Z]$/.test(t))out.add(t.slice(0,-1)+(t.slice(-1)==="G"?"F":"G"));
+  if(m&&m[1].length>=2)out.add(m[1][1]+m[1][0]+m[1].slice(2)+m[2]);
+  out.delete(t);if(!out.size)out.add(t+"1");
+  return [...out];
+}
+function chatter(stn){
+  const o=otherCS(),full=`${o.t} ${o.n}`,sh=o.n,tw=taxiwords(),tx=tw.length?pick(tw):"Alpha";
+  const g=[[`${full}, ${GNDT()}, runway ${K.rwy}, taxi via ${tx}.`,`Runway ${K.rwy} via ${tx}, ${sh}.`],
+    [`${full}, taxi to the ramp via ${tx}.`,`${tx} to the ramp, ${sh}.`],
+    [`${full}, ${GNDT()}, hold position.`,`Holding, ${sh}.`]];
+  const t=[[`${full}, runway ${K.rwy}, cleared touch and go.`,`Cleared touch and go, ${sh}.`],
+    [`${full}, report midfield ${K.dir} downwind.`,`Wilco, ${sh}.`],
+    [`${full}, extend downwind, I'll call your base.`,`Extend downwind, ${sh}.`],
+    [`${full}, runway ${K.rwy}, cleared to land.`,`Cleared to land ${K.rwy}, ${sh}.`]];
+  const p=pick(stn.includes("Ground")?g:t);
+  return [{who:"atc",text:p[0]},{who:"pilot",text:p[1]}];
+}
+function trapItem(ph){
+  const cs=`${K.type} ${pick(traps())}`,gnd=ph==="ground";
+  const lines=gnd?[`${cs}, hold position.`,`${cs}, runway ${K.rwy}, taxi via ${K.route}.`,`${cs}, give way to the Piper from your right.`]
+                 :[`${cs}, extend downwind, I'll call your base.`,`${cs}, runway ${K.rwy}, cleared touch and go.`,`${cs}, go around.`,`${cs}, make one 360 for spacing.`];
+  return {ph,trapCs:cs,stn:gnd?GNDT():TWRT(),freq:gnd?GND():TWRF(),sit:gnd?`You're taxiing, listening to ground.`:`You're on ${K.dir} downwind for ${K.rwy}.`,you:null,
+    tx:[{who:"atc",text:pick(lines),trap:true}],rb:"(Say nothing. Not your call sign.)",
+    tip:`That call was for ${cs}, not ${CS()}. Listen for every character of your call sign. If you're not sure, ask: "Was that for ${CS()}?"`};
+}
+function blockedItem(ph){
+  const gnd=ph==="ground";
+  return {ph,stn:gnd?GNDT():TWRT(),freq:gnd?GND():TWRF(),
+    sit:gnd?"You asked for taxi. Someone keys their mic over the controller.":`Holding short ${K.rwy}${HP()}. You made your ready call.`,you:null,
+    tx:[{who:"atc",text:gnd?`${CS()}, runway ${K.rwy}, taxi via ${K.route}, hold short of`:`${CS()}, runway ${K.rwy}, cleared for`,me:true,blocked:true}],
+    rb:`Say again for ${CS()}.`,tip:"The call was blocked. Never fill in the missing part, especially a hold short or a clearance. Ask for it again."};
+}
+
+// ---------- drill items
+const A=t=>[{who:"atc",text:t,me:true}];
+const G=o=>Object.assign({ph:"ground",stn:GNDT(),freq:GND()},o);
+const T=o=>Object.assign({ph:"tower",stn:TWRT(),freq:TWRF()},o);
+const P=o=>Object.assign({ph:"pattern",stn:TWRT(),freq:TWRF()},o);
+const I=o=>Object.assign({ph:"inbound",stn:TWRT(),freq:TWRF()},o);
+function scenarios(){
+  const cs=CS(),R=K.rwy,RT=K.route,D=K.dir,O=OPP(K.dir),park=K.park;
+  const S=[
+  c=>G({sit:`Parked at ${park}, engine running, ATIS copied.`,you:SPEC(c),tx:A(`${FULL()}, ${GNDT()}, runway ${R}, taxi via ${RT}.`),
+    rb:`Runway ${R}, taxi via ${RT}, ${cs}.`,tip:"Runway assignment and route are the two things to read back."}),
+  c=>G({sit:`Parked at ${park}. The ATIS just changed and you have the old one.`,you:SPEC(c),tx:A(`${FULL()}, ${GNDT()}, information ${c.next} is now current, altimeter ${c.alt}. Runway ${R}, taxi via ${RT}.`),
+    rb:`${c.next}, ${c.alt}, runway ${R}, taxi via ${RT}, ${cs}.`,tip:"Read back the new ATIS letter and altimeter, then set the altimeter."}),
+  c=>G({sit:`You're taxiing on ${RT.split(",")[0]}.`,you:null,tx:A(`${cs}, hold position.`),rb:`Holding, ${cs}.`,tip:"Stop right away. Don't move until ground says continue."}),
+  c=>G({sit:"Holding position after ground stopped you.",you:null,tx:A(`${cs}, continue taxi.`),rb:`Continue taxi, ${cs}.`,tip:"Short and simple."}),
+  c=>G({sit:"You're taxiing. Another airplane is coming from your left.",you:null,tx:A(`${cs}, give way to the ${c.trf} from your left.`),rb:`Give way to the ${c.trf}, ${cs}.`,tip:"Let them pass first, then continue on your clearance."}),
+  c=>G({sit:`Parked at ${park}. Another airplane just taxied past you.`,you:SPEC(c),tx:A(`${FULL()}, ${GNDT()}, follow the ${c.trf} ahead, runway ${R}, taxi via ${RT}.`),
+    rb:`Follow the ${c.trf}, runway ${R} via ${RT}, ${cs}.`,tip:`If you can't see who to follow, say: "${cs}, negative contact the ${c.trf}."`}),
+  c=>G({sit:`Parked at ${park}, engine running.`,you:SPEC(c),tx:A(`${FULL()}, ${GNDT()}, runway ${R}, taxi via ${RT}, make ${D} traffic, squawk ${c.sq}.`),
+    rb:`Runway ${R}, taxi via ${RT}, ${D} traffic, squawk ${c.sq}, ${cs}.`,tip:"Several items in one call. Write them as they speak."}),
+  c=>G({sit:`Parked at ${park}. Frequency is busy.`,you:SPEC(c),tx:A(`${FULL()}, standby.`),rb:"(Say nothing.)",tip:"Standby is not a clearance. Don't reply and don't move. Wait for them to call you."}),
+  c=>G({sit:`Parked at ${park}.`,you:`${K.fac} Ground, ${FULL()} at ${park}, requesting taxi for touch and go's.`,tx:A(`${FULL()}, verify you have the current ${ATISL()}.`),
+    rb:`Affirmative, information ${c.atis}, ${cs}.`,tip:"You left out the ATIS letter. Always include \"with information ___\"."}),
+  c=>G({sit:`Holding short of runway ${R}${HP()}, run-up complete.`,you:null,tx:A(`${cs}, monitor tower ${TWRF()}.`),rb:`Monitor tower, ${cs}.`,tip:`Monitor means switch to ${TWRF()} and listen. Tower will call you.`}),
+  c=>G({sit:`Holding short of runway ${R}${HP()}, run-up complete.`,you:null,tx:A(`${cs}, contact tower ${TWRF()}.`),rb:`Tower ${TWRF()}, ${cs}.`,tip:`Contact means switch to ${TWRF()} and call them.`}),
+  c=>G({sit:`You just cleared runway ${R} at ${K.exit} after a full stop.`,you:`${K.fac} Ground, ${FULL()} clear of runway ${R} at ${K.exit}, taxi to ${park}.`,
+    tx:A(`${FULL()}, ${GNDT()}, taxi to ${park} via ${K.back}.`),rb:`${K.back} to ${park}, ${cs}.`,tip:"After clearing the runway, stop past the hold line, clean up, then call ground."}),
+  // TOWER
+  c=>T({sit:`Holding short runway ${R}${HP()}, run-up done.`,you:TWRCALL(),tx:A(`${FULL()}, ${TWRT()}, wind ${c.wind}, runway ${R}${HP()}, cleared for takeoff, make ${D} closed traffic.`),
+    rb:`Runway ${R}${HP()}, cleared for takeoff, ${D} closed traffic, ${cs}.`,tip:"No need to read back the wind. Runway + cleared for takeoff + pattern direction."}),
+  c=>T({sit:`Holding short runway ${R}${HP()}.`,you:TWRCALL(),tx:A(`${FULL()}, ${TWRT()}, make ${O} closed traffic, runway ${R}, cleared for takeoff.`),
+    rb:`${cap(O)} closed traffic, runway ${R}, cleared for takeoff, ${cs}.`,tip:`Listen for ${O.toUpperCase()}. It's easy to hear what you expect.`}),
+  c=>T({sit:`Holding short runway ${R}. You see an airplane on final.`,you:TWRCALL(),tx:A(`${FULL()}, ${TWRT()}, hold short runway ${R}, traffic ${c.mile} mile final.`),
+    rb:`Holding short runway ${R}, ${cs}.`,tip:"Then wait. Tower will clear you once the traffic is past."}),
+  c=>T({sit:`Holding short runway ${R}${HP()}.`,you:TWRCALL(),tx:A(`${FULL()}, ${TWRT()}, runway ${R}${HP()}, line up and wait.`),
+    rb:`Runway ${R}${HP()}, line up and wait, ${cs}.`,tip:"Line up on the centerline and STOP. This is not a takeoff clearance."}),
+  c=>T({sit:`Holding short runway ${R}${HP()}.`,you:TWRCALL(),tx:A(`${FULL()}, ${TWRT()}, runway ${R}, cleared for immediate takeoff, traffic ${c.mile} mile final.`),
+    rb:`Runway ${R}, cleared for immediate takeoff, ${cs}.`,tip:`Roll right away. If you're not ready: "Unable immediate, ${cs}."`}),
+  c=>T({sit:`Holding short runway ${R}. Your checklist isn't finished.`,you:TWRCALL(),tx:A(`${FULL()}, ${TWRT()}, can you accept an immediate takeoff, traffic ${c.mile} mile final?`),
+    rb:`Unable, ${cs}.`,tip:"\"Unable\" is a full, correct answer. Never rush onto a runway to please the controller."}),
+  c=>T({sit:`Holding short runway ${R}.`,you:TWRCALL(),tx:A(`${FULL()}, ${TWRT()}, runway ${R}, cleared for takeoff, extend upwind, I'll call your crosswind.`),
+    rb:`Runway ${R}, cleared for takeoff, extend upwind, ${cs}.`,tip:"Don't turn crosswind until tower tells you."}),
+  c=>T({sit:`Holding short ${R}. A ${c.big} just departed.`,you:TWRCALL(),tx:A(`${FULL()}, ${TWRT()}, caution wake turbulence, departing ${c.big}. Runway ${R}, cleared for takeoff, make ${D} closed traffic.`),
+    rb:`Runway ${R}, cleared for takeoff, ${D} closed traffic, ${cs}.`,tip:"Rotate before the bigger airplane's rotation point and climb above its path."}),
+  c=>T({sit:`Holding short runway ${R}.`,you:TWRCALL(),tx:A(`${FULL()}, ${TWRT()}, squawk ${c.sq}, runway ${R}, cleared for takeoff.`),
+    rb:`Squawk ${c.sq}, runway ${R}, cleared for takeoff, ${cs}.`,tip:"Set the squawk before you roll."}),
+  c=>T({sit:`Holding short ${R}. The pattern sounds busy.`,you:TWRCALL(),tx:A(`${FULL()}, ${TWRT()}, unable touch and go's, pattern is full. Say intentions.`),
+    rb:`We'll hold for the pattern, ${cs}.`,tip:`Any clear intention works: hold and wait, or "request taxi back to ${park}".`}),
+  c=>T({sit:"You were cleared for takeoff and are about to cross the hold line.",you:null,tx:A(`${cs}, cancel takeoff clearance, hold short runway ${R}.`),
+    rb:`Cancelling takeoff clearance, holding short runway ${R}, ${cs}.`,tip:"Stop where you are. Don't cross the hold short line."}),
+  c=>T({sit:`On the takeoff roll on ${R}, about 30 knots.`,you:null,tx:A(`${cs}, stop immediately, I say again, stop immediately.`),
+    rb:`(Abort first.) Stopping, ${cs}.`,tip:"Power idle, brakes. Fly the airplane first, then answer."}),
+  // PATTERN
+  c=>P({sit:"Climbing on upwind after a touch and go.",you:null,tx:A(`${cs}, report midfield ${D} downwind.`),rb:`Wilco, ${cs}.`,tip:`When you get there: "${cs}, midfield ${D} downwind ${R}."`}),
+  c=>P({sit:`Midfield ${D} downwind ${R}.`,you:`${cs}, midfield ${D} downwind ${R}.`,tx:A(`${cs}, number 2, follow the ${c.trf} on base.`),
+    rb:`Number 2, following the ${c.trf}, traffic in sight, ${cs}.`,tip:`Only say "in sight" or "following" if you see it. If not: "Looking for traffic, ${cs}."`}),
+  c=>P({sit:`${cap(D)} downwind ${R}, abeam the numbers.`,you:null,tx:A(`${cs}, extend downwind, I'll call your base.`),rb:`Extend downwind, ${cs}.`,
+    tip:`"Extend downwind, you'll call my base" is fine too. If you get far out: "${cs}, still extending downwind."`}),
+  c=>P({sit:`Turning ${D} base for ${R}.`,you:null,tx:A(`${cs}, wind ${c.wind}, runway ${R}, cleared touch and go.`),rb:`Runway ${R}, cleared touch and go, ${cs}.`,tip:"No clearance by short final? Go around and ask."}),
+  c=>P({sit:`Turning ${D} base for ${R}.`,you:null,tx:A(`${cs}, runway ${R}, cleared for the option.`),rb:`Runway ${R}, cleared for the option, ${cs}.`,tip:"Option: touch and go, full stop, stop and go, low approach or go around. Your choice."}),
+  c=>P({sit:`${cap(D)} downwind ${R}. Traffic ahead is slow.`,you:null,tx:A(`${cs}, make one 360 for spacing.`),rb:`One 360 for spacing, ${cs}.`,tip:`${cap(D)} traffic means a ${D} 360, unless told otherwise.`}),
+  c=>P({sit:`Short final runway ${R}. An airplane is still on the runway.`,you:null,tx:A(`${cs}, go around.`),rb:`Going around, ${cs}.`,tip:"Full power, pitch for climb, clean up in steps. Talk after the airplane is under control."}),
+  c=>P({sit:`Midfield ${D} downwind ${R}, last lap.`,you:`${cs}, midfield ${D} downwind ${R}, full stop.`,tx:A(`${cs}, runway ${R}, cleared to land.`),rb:`Runway ${R}, cleared to land, ${cs}.`,tip:"Tell tower early when you want the full stop."}),
+  c=>P({sit:`Rolling out on ${R} after a full stop landing.`,you:null,tx:A(`${cs}, turn ${K.exitdir} ${K.exit}, contact ground ${GND()}.`),rb:`${cap(K.exitdir)} ${K.exit}, ground ${GND()}, ${cs}.`,
+    tip:"Don't switch until you're past the hold line."}),
+  c=>P({sit:"Climbing on upwind, last lap. You're heading out to the practice area.",you:`${cs}, request ${c.dir} departure.`,tx:A(`${cs}, ${c.dir} departure approved, frequency change approved.`),
+    rb:`${cap(c.dir)} departure, frequency change approved, ${cs}.`,tip:"Stay with tower until you're clear of their airspace, unless they approve the change."}),
+  // INBOUND
+  c=>I({sit:`Coming back from the practice area, ${c.dist} miles ${c.dir}, 2,000 feet.`,you:`${TWRT()}, ${FULL()}, ${c.dist} miles ${c.dir}, 2,000, inbound for landing with information ${c.atis}.`,
+    tx:A(`${FULL()}, ${TWRT()}, enter ${D} downwind runway ${R}, report midfield.`),rb:`${cap(D)} downwind ${R}, report midfield, ${cs}.`,tip:"Plan your 45° entry to the downwind before you call."}),
+  c=>I({sit:`Coming back, ${c.dist} miles ${c.dir}, 2,000 feet.`,you:`${TWRT()}, ${FULL()}, ${c.dist} miles ${c.dir}, 2,000, inbound for landing with information ${c.atis}.`,
+    tx:A(`${FULL()}, ${TWRT()}, enter ${O} base runway ${R}, report 2 mile base.`),rb:`${cap(O)} base ${R}, report 2 mile base, ${cs}.`,tip:`${cap(O)} base means joining from the other side of your usual pattern. Picture it before you turn.`}),
+  c=>I({sit:`Coming back, ${c.dist} miles ${c.dir}, 2,000 feet.`,you:`${TWRT()}, ${FULL()}, ${c.dist} miles ${c.dir}, 2,000, inbound for landing with information ${c.atis}.`,
+    tx:A(`${FULL()}, ${TWRT()}, make straight in runway ${R}, report 3 mile final.`),rb:`Straight in ${R}, report 3 mile final, ${cs}.`,tip:"Line up early on the extended centerline."}),
+  c=>I({sit:`Coming back, ${c.dist} miles ${c.dir}, 2,000 feet.`,you:`${TWRT()}, ${FULL()}, ${c.dist} miles ${c.dir}, 2,000, inbound for landing with information ${c.atis}.`,
+    tx:A(`${FULL()}, ${TWRT()}, squawk ${c.sq} and ident.`),rb:`Squawk ${c.sq}, ident, ${cs}.`,tip:"Set the code, then press IDENT once."}),
+  c=>I({sit:`Coming back, ${c.dist} miles ${c.dir}. The ATIS changed while you were out.`,you:`${TWRT()}, ${FULL()}, ${c.dist} miles ${c.dir}, 2,000, inbound for landing with information ${c.atis}.`,
+    tx:A(`${FULL()}, ${TWRT()}, information ${c.next} is current, altimeter ${c.alt}. Enter ${D} downwind runway ${R}.`),rb:`${c.next}, ${c.alt}, ${D} downwind ${R}, ${cs}.`,tip:"Set the new altimeter right away."}),
+  ];
+  const X=o=>Object.assign({ph:"traffic",stn:TWRT(),freq:TWRF()},o);
+  const C=o=>Object.assign({ph:"curve",stn:TWRT(),freq:TWRF()},o);
+  const BD=()=>pick(["opposite direction","northbound","southbound","eastbound","westbound"]);
+  const TW1=(taxiwords()[0]||"Alpha"),OR=oppR(R),AF=pick(["118.3","120.25","119.15","127.4"]);
+  S.push(
+  c=>X({sit:`Crosswind for ${R}, climbing through 800 feet.`,you:null,tx:A(`${cs}, traffic ${ri(1,3)} o'clock, ${c.mile} miles, ${BD()}, a ${c.trf} at 1,500.`),
+    rb:`Looking for traffic, ${cs}.`,tip:`Say "traffic in sight" only if you see it. Otherwise "looking". 12 o'clock is straight off your nose, 3 o'clock is off your right wing.`}),
+  c=>X({sit:`${cap(D)} downwind ${R}.`,you:null,tx:A(`${cs}, traffic ${D==="left"?"2":"10"} o'clock, 2 miles, a ${c.trf} on the 45 for the downwind, report traffic in sight.`),
+    rb:`Looking, will report in sight, ${cs}.`,tip:`When you spot it: "${cs}, traffic in sight."`}),
+  c=>X({sit:`${cap(D)} downwind ${R}, pattern altitude.`,you:null,tx:A(`Traffic alert, ${cs}, traffic 12 o'clock, 1 mile, opposite direction, same altitude. Suggest immediate turn to the right.`),
+    rb:`Turning right, ${cs}.`,tip:"A traffic alert means act now. Turn first, then talk."}),
+  c=>X({sit:`Inbound, ${c.dist} miles ${c.dir}, 2,000 feet.`,you:null,tx:A(`${cs}, traffic 1 o'clock, 4 miles, ${BD()}, a ${c.big} at 2,500, report in sight.`),
+    rb:`Looking for traffic, ${cs}.`,tip:"Scan the sky in sections, not one big sweep. Bigger airplanes look closer than they are."}),
+  c=>X({sit:"You told tower you were still looking for traffic.",you:null,tx:A(`${cs}, traffic no longer a factor.`),rb:`Roger, ${cs}.`,tip:"Roger is all you need."}),
+  c=>X({sit:`${cap(D)} downwind ${R}. Tower pointed out a ${c.trf} ahead.`,you:`${cs}, traffic in sight.`,tx:A(`${cs}, number 2, follow that traffic, maintain visual separation.`),
+    rb:`Number 2, following, maintain visual separation, ${cs}.`,tip:"Spacing behind that airplane is now your job."}),
+  c=>X({sit:`${cap(D)} downwind ${R}.`,you:null,tx:A(`${cs}, traffic, a helicopter, ${D==="left"?"9":"3"} o'clock, 1 mile, crossing midfield at 500.`),
+    rb:`Looking for traffic, ${cs}.`,tip:"Helicopters often cross at low altitude. Look below you too."}),
+  c=>C({ph:"curve",stn:GNDT(),freq:GND(),sit:`Taxiing to runway ${R}.`,you:null,tx:A(`${cs}, runway change, runway ${OR} is now in use. Hold position, I'll have a new route for you.`),
+    rb:`Holding, expect runway ${OR}, ${cs}.`,tip:"New runway means re-brief: heading, pattern direction, and where you'll exit."}),
+  c=>C({stn:GNDT(),freq:GND(),sit:`Taxiing via ${RT}.`,you:null,tx:A(`${cs}, amend taxi instructions, hold short of ${TW1}, traffic crossing.`),
+    rb:`Hold short ${TW1}, ${cs}.`,tip:"An amended instruction replaces the old one. Read back every hold short."}),
+  c=>C({sit:`Holding short runway ${R}${HP()}.`,you:TWRCALL(),tx:A(`${FULL()}, ${TWRT()}, hold short runway ${R}, expect a 5 minute delay, multiple arrivals.`),
+    rb:`Holding short runway ${R}, ${cs}.`,tip:"Use the wait to re-check your takeoff briefing."}),
+  c=>C({sit:`${cap(D)} downwind ${R}.`,you:null,tx:A(`${cs}, change to my frequency ${AF}.`),rb:`${AF}, ${cs}.`,
+    tip:`Switch, then check in right away: "${TWRT()}, ${cs}, with you, ${D} downwind."`}),
+  c=>C({sit:`${cap(D)} downwind ${R}.`,you:null,tx:A(`${cs}, altimeter ${c.alt}.`),rb:`${c.alt}, ${cs}.`,tip:"Set it right away."}),
+  c=>C({sit:`${cap(D)} downwind ${R}, abeam the numbers.`,you:null,tx:A(`${cs}, can you make a short approach?`),rb:`Affirmative, ${cs}.`,tip:"Only if you can do it safely. \"Unable\" is also a correct answer."}),
+  c=>C({sit:`Upwind ${R}, climbing.`,you:null,tx:A(`${cs}, change of plans, make ${O} traffic, enter ${O} downwind runway ${R}.`),
+    rb:`${cap(O)} traffic, ${O} downwind ${R}, ${cs}.`,tip:"Pattern direction changed. Picture which way you turn before you turn."}),
+  c=>C({sit:`Short final ${R}, already cleared to land.`,you:null,tx:A(`${cs}, cancel landing clearance, go around, aircraft on the runway.`),rb:`Going around, ${cs}.`,tip:"Fly first. Read back once you're climbing."}),
+  c=>C({sit:`Upwind ${R}, climbing through 500 feet.`,you:null,tx:A(`${cs}, turn crosswind now, traffic departing behind you.`),rb:`Crosswind now, ${cs}.`,tip:"\"Now\" means right away."}),
+  c=>C({sit:`${cap(D)} downwind ${R} at 1,100 feet.`,you:null,tx:A(`${cs}, say altitude.`),rb:`1,100, ${cs}.`,tip:"Give your current altitude. Check it before you answer."}),
+  c=>C({sit:`${cap(D)} downwind ${R}. A slower ${c.trf} is ahead of you.`,you:null,tx:A(`${cs}, reduce to slowest practical speed, following a ${c.trf}.`),rb:`Slowest practical, ${cs}.`,tip:"Slow down, but keep a safe margin above stall speed."})
+  );
+  if(K.cross){
+    S.push(c=>G({sit:`Parked at ${park}, engine running.`,you:SPEC(c),tx:A(`${FULL()}, ${GNDT()}, runway ${R}, taxi via ${RT}, hold short of runway ${K.cross}.`),
+      rb:`Runway ${R}, taxi via ${RT}, hold short runway ${K.cross}, ${cs}.`,tip:"Hold short instructions must always be read back. Stop at the hold line and call when you're there."}),
+    c=>G({sit:`Holding short of runway ${K.cross} on your way to ${R}.`,you:`${GNDT()}, ${cs} holding short runway ${K.cross}.`,tx:A(`${cs}, cross runway ${K.cross}, continue taxi.`),
+      rb:`Cross runway ${K.cross}, ${cs}.`,tip:"Read back every runway crossing. Look both ways, then cross without stopping."}));
+  }
+  if(K.inter)S.push(c=>G({sit:`Parked at ${park}. The pattern is busy, so ground offers an intersection departure.`,you:SPEC(c),
+    tx:A(`${FULL()}, ${GNDT()}, runway ${R} at ${K.inter}, intersection departure, taxi via ${RT}.`),rb:`Runway ${R} at ${K.inter}, taxi via ${RT}, ${cs}.`,
+    tip:`You'll have less runway. If you want the full length: "${cs}, request full length."`}));
+  if(K.alt&&K.altroute){
+    S.push(c=>G({sit:`Parked at ${park}. You expect runway ${R}.`,you:SPEC(c),tx:A(`${FULL()}, ${GNDT()}, wind ${String(((parseInt(K.alt)||36)*10)).padStart(3,"0")} at ${ri(5,10)}, runway ${K.alt}, taxi via ${K.altroute}.`),
+      rb:`Runway ${K.alt}, taxi via ${K.altroute}, ${cs}.`,tip:"Trap: read back the runway they gave you, not the one you expected. Then re-brief your departure."}),
+    c=>T({sit:`Holding short runway ${K.alt}.`,you:`${TWRT()}, ${FULL()} holding short runway ${K.alt}, ready for touch and go's.`,tx:A(`${FULL()}, ${TWRT()}, runway ${K.alt}, cleared for takeoff, make ${O} closed traffic.`),
+      rb:`Runway ${K.alt}, cleared for takeoff, ${O} closed traffic, ${cs}.`,tip:"Different runway, maybe a different pattern direction. Listen for it."}));
+  }
+  return S;
+}
+let S=scenarios();
+const LIGHTS=[
+ {cls:"green",lbl:"Steady green",gnd:"Cleared for takeoff.",air:"Cleared to land."},
+ {cls:"green flash",lbl:"Flashing green",gnd:"Cleared to taxi.",air:"Return for landing (to be followed by steady green)."},
+ {cls:"red",lbl:"Steady red",gnd:"Stop.",air:"Give way to other aircraft and continue circling."},
+ {cls:"red flash",lbl:"Flashing red",gnd:"Taxi clear of the runway in use.",air:"Airport unsafe. Do not land."},
+ {cls:"white flash",lbl:"Flashing white",gnd:"Return to your starting point on the airport.",air:"(Not used in flight.)"},
+ {cls:"alt",lbl:"Alternating red and green",gnd:"Exercise extreme caution.",air:"Exercise extreme caution."}];
+function lightItem(){
+  const L=pick(LIGHTS);let air=chance(.5);if(L.cls==="white flash")air=false;
+  return {ph:"light",stn:TWRT(),freq:"Light gun",light:L,
+   sit:air?`Your radio failed. You're in the pattern for ${K.rwy} and the tower points a light at you.`:"Your radio failed. You're on the ground and the tower points a light at you.",
+   you:null,tx:[],rb:air?L.air:L.gnd,
+   tip:`${L.lbl}. ${air?"In flight":"On the ground"} it means: ${air?L.air:L.gnd} Acknowledge by rocking your wings in flight, or moving the ailerons or rudder on the ground. At night, flash the landing light.`};
+}
+
+// ---------- state
+let mode="drill",phase="all",cur=null,stats={done:0,good:0,say:0},missed=[],voices=[],ctxA=null,noise=null,lastIdx=-1,flight=null,queueId=0;
+try{phase=localStorage.getItem("rt_phase")||"all"}catch(e){}
+
+// ---------- speech
+const DG=["zero","one","two","three","four","five","six","seven","eight","niner"];
+const dd=s=>s.split("").map(d=>DG[+d]).join(" ");
+const RWY={L:"left",R:"right",C:"center"};
+const CLK=["","one","two","three","four","five","six","seven","eight","nine","ten","eleven","twelve"];
+function spoken(t){
+  return t
+   .replace(/\b(\d{1,2}) o'clock/g,(m,n)=>(CLK[+n]||n)+" o'clock")
+   .replace(/\b(\d{1,2}),(\d)00\b/g,(m,a,b)=>dd(a)+" thousand"+(b==="0"?"":" "+DG[+b]+" hundred"))
+   .replace(/\b360\b/g,"three sixty")
+   .replace(/\b(\d{3})\.(\d{1,3})\b/g,(m,a,b)=>dd(a)+" point "+dd(b))
+   .replace(/\b(\d{2})\.(\d{2})\b/g,(m,a,b)=>dd(a+b))
+   .replace(/\b(\d+)([A-Z]{1,2})\b/g,(m,n,l)=>(n.length<=2&&RWY[l])?dd(n)+" "+RWY[l]:dd(n)+" "+l.split("").map(x=>PH[x]||x).join(" "))
+   .replace(/\d+/g,n=>dd(n));
+}
+function vscore(v){return (/Natural|Neural|Premium|Enhanced|Online/i.test(v.name)?10:0)+(/Google/i.test(v.name)?4:0)+(/en-US/i.test(v.lang)?2:0)+(/Guy|Andrew|Christopher|Eric|Brian|Evan|Nathan|Tom|Aaron|Davis/i.test(v.name)?1:0);}
+function loadVoices(){
+  if(!("speechSynthesis" in window))return;
+  voices=speechSynthesis.getVoices().filter(v=>/^en/i.test(v.lang)).sort((a,b)=>vscore(b)-vscore(a));
+  const sel=$("voice");let prev=sel.value;
+  try{const s=localStorage.getItem("rt_voice");if(s){const k=voices.findIndex(v=>v.name===s);if(k>=0)prev=String(k);}}catch(e){}
+  sel.innerHTML="";
+  voices.forEach((v,i)=>{const o=document.createElement("option");o.value=i;o.textContent=(vscore(v)>=10?"★ ":"")+v.name.replace(/Microsoft |Google /,"")+" ("+v.lang+")";sel.appendChild(o)});
+  sel.value=prev&&voices[+prev]?prev:"0";
+  try{if(cloud.on)addCloudVoices();}catch(e){}
+}
+if("speechSynthesis" in window){loadVoices();speechSynthesis.onvoiceschanged=loadVoices;}
+$("voice").onchange=()=>{try{const v=$("voice").value;localStorage.setItem("rt_voice",v.startsWith("g:")?v:voices[+v].name)}catch(e){}};
+function pilotVoice(){
+  const a=voices[+$("voice").value];if(!a)return null;
+  return voices.find(v=>v!==a&&vscore(v)>=vscore(a)-2&&v.lang.slice(0,2)===a.lang.slice(0,2))||voices.find(v=>v!==a)||a;
+}
+
+// ---------- radio static
+function initAudio(){
+  if(ctxA)return;
+  try{
+    ctxA=new (window.AudioContext||window.webkitAudioContext)();
+    const len=ctxA.sampleRate*2,buf=ctxA.createBuffer(1,len,ctxA.sampleRate),d=buf.getChannelData(0);
+    for(let i=0;i<len;i++)d[i]=Math.random()*2-1;
+    const src=ctxA.createBufferSource();src.buffer=buf;src.loop=true;
+    const bp=ctxA.createBiquadFilter();bp.type="bandpass";bp.frequency.value=1900;bp.Q.value=.7;
+    noise=ctxA.createGain();noise.gain.value=0;src.connect(bp);bp.connect(noise);noise.connect(ctxA.destination);src.start();
+  }catch(e){ctxA=null}
+}
+let staticEnabled=true;try{staticEnabled=localStorage.getItem("rt_static")!=="off"}catch(e){}
+const staticOn=()=>noise&&staticEnabled;
+function paintStatic(){const b=$("staticBtn");b.setAttribute("aria-pressed",staticEnabled);b.textContent=staticEnabled?"Static ON":"Static OFF";}
+$("staticBtn").onclick=()=>{staticEnabled=!staticEnabled;try{localStorage.setItem("rt_static",staticEnabled?"on":"off")}catch(e){}
+  if(!staticEnabled&&noise){const t=ctxA.currentTime;noise.gain.cancelScheduledValues(t);noise.gain.setValueAtTime(0,t);}
+  else if(staticEnabled&&noise&&$("led").classList.contains("on"))hiss(.045);
+  paintStatic();};
+paintStatic();
+function hiss(l){if(!staticOn())return;const t=ctxA.currentTime;noise.gain.cancelScheduledValues(t);noise.gain.setTargetAtTime(l,t,.02);}
+function squelch(){if(!staticOn())return;const t=ctxA.currentTime;noise.gain.cancelScheduledValues(t);
+  noise.gain.setValueAtTime(.22,t);noise.gain.exponentialRampToValueAtTime(.0001,t+.18);noise.gain.setValueAtTime(0,t+.2);}
+function squeal(ms){
+  if(!ctxA)return;const t=ctxA.currentTime;
+  const o=ctxA.createOscillator(),g=ctxA.createGain();o.type="sawtooth";o.frequency.setValueAtTime(900,t);o.frequency.linearRampToValueAtTime(1400,t+ms/1000);
+  g.gain.setValueAtTime(.06,t);g.gain.setValueAtTime(0,t+ms/1000);o.connect(g);g.connect(ctxA.destination);o.start(t);o.stop(t+ms/1000+.05);
+  if(staticOn()){noise.gain.cancelScheduledValues(t);noise.gain.setValueAtTime(.25,t);noise.gain.setValueAtTime(0,t+ms/1000);}
+}
+function setRx(on){$("led").classList.toggle("on",on);$("rxtxt").textContent=on?"RX":"STBY";}
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+// ---------- realistic voices (served by the site's /api/tts function when hosted on Netlify)
+const cloud={on:false,limited:false,cache:new Map(),ael:null,fx:null,dry:null};
+const CLOUD_VOICES=[["g:atc1","★ Realistic controller 1"],["g:atc2","★ Realistic controller 2"],["g:atc3","★ Realistic controller 3"],["g:atcf","★ Realistic controller 4 (female)"]];
+const SILENT=(()=>{const n=800,b=new ArrayBuffer(44+n),d=new DataView(b);const w=(o,x)=>[...x].forEach((c,i)=>d.setUint8(o+i,c.charCodeAt(0)));
+  w(0,"RIFF");d.setUint32(4,36+n,true);w(8,"WAVE");w(12,"fmt ");d.setUint32(16,16,true);d.setUint16(20,1,true);d.setUint16(22,1,true);
+  d.setUint32(24,8000,true);d.setUint32(28,8000,true);d.setUint16(32,1,true);d.setUint16(34,8,true);w(36,"data");d.setUint32(40,n,true);
+  for(let i=0;i<n;i++)d.setUint8(44+i,128);return URL.createObjectURL(new Blob([b],{type:"audio/wav"}));})();
+function hush(){if("speechSynthesis" in window)speechSynthesis.cancel();if(cloud.ael){try{cloud.ael.pause();}catch(e){}}}
+async function probeCloud(){
+  try{const r=await fetch("/api/tts?probe=1",{cache:"no-store"});if(!r.ok)return;const j=await r.json();if(!j||!j.cloud)return;
+    cloud.on=true;addCloudVoices();}catch(e){}
+}
+function addCloudVoices(){
+  const sel=$("voice");
+  CLOUD_VOICES.slice().reverse().forEach(([v,l])=>{if(![...sel.options].some(o=>o.value===v))sel.insertBefore(new Option(l,v),sel.firstChild);});
+  let saved=null;try{saved=localStorage.getItem("rt_voice")}catch(e){}
+  if(!saved||saved.startsWith("g:"))sel.value=CLOUD_VOICES.some(c=>c[0]===saved)?saved:"g:atc1";
+}
+const atcKey=()=>{const v=$("voice").value||"";return v.startsWith("g:")?v.slice(2):null;};
+const cloudActive=()=>cloud.on&&!cloud.limited&&!!atcKey();
+const pilotKey=t=>t.length%2?"pilot1":"pilot2";
+const keyFor=it=>it.who==="pilot"?pilotKey(it.text):atcKey();
+const cleanTxt=t=>t.replace(/[^a-zA-Z0-9 ,.'?!:;\-\/()]/g," ").replace(/\s+/g," ").trim().slice(0,900);
+function getAudio(text,v){
+  const t=cleanTxt(text),k=v+"|"+t;
+  if(cloud.cache.has(k))return cloud.cache.get(k);
+  const p=fetch("/api/tts?v="+encodeURIComponent(v)+"&t="+encodeURIComponent(t)).then(r=>{
+    if(r.status===429||r.status===503){cloud.limited=true;$("hint").textContent="Realistic voices are resting for today. Using your device's voices instead.";}
+    if(!r.ok)throw new Error("tts "+r.status);return r.blob();}).then(b=>URL.createObjectURL(b));
+  p.catch(()=>cloud.cache.delete(k));
+  cloud.cache.set(k,p);
+  if(cloud.cache.size>200)cloud.cache.delete(cloud.cache.keys().next().value);
+  return p;
+}
+function ensureAel(){
+  if(cloud.ael||!cloud.on)return;
+  initAudio();
+  const a=new Audio();a.preload="auto";cloud.ael=a;
+  if(ctxA){try{
+    const src=ctxA.createMediaElementSource(a);
+    const hp=ctxA.createBiquadFilter();hp.type="highpass";hp.frequency.value=380;
+    const lp=ctxA.createBiquadFilter();lp.type="lowpass";lp.frequency.value=2900;
+    const sh=ctxA.createWaveShaper();const n=1024,c=new Float32Array(n);for(let i=0;i<n;i++){const x=i/(n-1)*2-1;c[i]=Math.tanh(2.4*x)/Math.tanh(2.4);}sh.curve=c;
+    cloud.fx=ctxA.createGain();cloud.dry=ctxA.createGain();cloud.fx.gain.value=1;cloud.dry.gain.value=0;
+    src.connect(hp);hp.connect(lp);lp.connect(sh);sh.connect(cloud.fx);cloud.fx.connect(ctxA.destination);
+    src.connect(cloud.dry);cloud.dry.connect(ctxA.destination);
+  }catch(e){cloud.fx=null;}}
+  a.src=SILENT;a.play().catch(()=>{});
+}
+async function playCloud(text,v,radio,isStale){
+  if(!cloud.ael)return false;
+  let url;try{url=await getAudio(text,v);}catch(e){return false;}
+  if(isStale())return true;
+  const a=cloud.ael;
+  if(cloud.fx){const fx=radio&&staticEnabled;cloud.fx.gain.value=fx?1:0;cloud.dry.gain.value=fx?0:1;}
+  return new Promise(res=>{
+    let done=false;const fin=ok=>{if(done)return;done=true;a.onended=a.onerror=a.onpause=null;res(ok);};
+    a.onended=a.onerror=a.onpause=null;
+    a.src=url;a.preservesPitch=true;a.playbackRate=+$("rate").value*(v.startsWith("pilot")?1.05:1);
+    a.onended=()=>fin(true);a.onerror=()=>fin(false);
+    a.play().then(()=>{a.onpause=()=>fin(true);}).catch(()=>fin(false));
+  });
+}
+function say(item,id){
+  if(!cloudActive())return sayDevice(item,id);
+  if(id!==queueId)return Promise.resolve();
+  setRx(true);hiss(.05);
+  return playCloud(spoken(item.text),keyFor(item),true,()=>id!==queueId).then(ok=>{
+    if(!ok)return sayDevice(item,id);
+    if(id!==queueId)return;
+    if(item.blocked){squeal(1100);return wait(1150);}
+    squelch();
+  });
+}
+function sayDevice(item,id){
+  return new Promise(res=>{
+    if(id!==queueId)return res();
+    const u=new SpeechSynthesisUtterance(spoken(item.text));
+    const v=item.who==="pilot"?pilotVoice():voices[+$("voice").value];
+    if(v){u.voice=v;u.lang=v.lang;}else u.lang="en-US";
+    u.rate=+$("rate").value*(item.who==="pilot"?1.05:1);u.pitch=item.who==="pilot"?1.1:.95;
+    let done=false;const fin=()=>{if(done)return;done=true;res();};
+    setRx(true);hiss(.1);u.onstart=()=>hiss(.045);
+    if(item.blocked){u.onend=()=>{squeal(1100);setTimeout(fin,1150);};}else{u.onend=()=>{squelch();fin();};}
+    u.onerror=fin;
+    speechSynthesis.speak(u);
+  });
+}
+async function playQueue(list,delay){
+  const id=++queueId;hush();
+  await wait(delay);
+  for(let i=0;i<list.length;i++){
+    if(id!==queueId)return false;
+    await say(list[i],id);setRx(false);
+    if(i<list.length-1)await wait(ri(350,800));
+  }
+  return id===queueId;
+}
+
+// ---------- building a round
+function decorate(item){
+  item.play=item.tx.slice();item.pre=null;
+  if(!item.light&&item.ph!=="atis"&&$("chatter").checked&&chance(.55)){
+    const ch=chatter(item.stn);
+    if(item.you&&chance(.5))item.pre=ch;else item.play=ch.concat(item.play);
+  }
+  return item;
+}
+function nextDrill(){
+  const ph=hf.on&&phase==="light"?"all":phase;
+  const pool=S.map((f,i)=>i).filter(i=>ph==="all"||S[i](ctx()).ph===ph);
+  const extra=["all","ground","tower","pattern"].includes(phase);
+  const r=Math.random();
+  if(!hf.on&&(phase==="light"||(phase==="all"&&r<.08)))return lightItem();
+  if(extra&&$("chatter").checked&&r<.2)return trapItem(phase==="all"?pick(["ground","pattern"]):(phase==="tower"?"pattern":phase));
+  if(extra&&r<.26)return blockedItem(phase==="all"||phase==="pattern"?pick(["ground","tower"]):phase);
+  let idx;do{idx=pick(pool)}while(pool.length>1&&idx===lastIdx);lastIdx=idx;
+  return S[idx](ctx());
+}
+
+// ---------- full flight
+function buildFlight(){
+  const c=ctx(),a=makeAtis(c),st=[],cs=CS(),R=K.rwy,RT=K.route,D=K.dir,park=K.park;
+  st.push({ph:"atis",stn:`${K.fac} ${ATISL()}`,freq:ATISF(),sit:`Engine running at ${park}. Tune the ${ATISL()} and copy it.`,you:null,
+    tx:[{who:"atc",text:a.text,me:true}],rb:`Information ${a.L}, wind ${a.wind}, altimeter ${a.alt}, runway ${R}.`,tip:"Write the letter, wind, altimeter and runway before you call ground."});
+  const g=pick([0,1,2]);
+  st.push(G({sit:`Parked at ${park}, ${ATISL()} copied.`,you:SPEC(c),
+    tx:A(g===1?`${FULL()}, ${GNDT()}, follow the ${c.trf} ahead, runway ${R}, taxi via ${RT}.`:`${FULL()}, ${GNDT()}, runway ${R}, taxi via ${RT}${g===2?`, squawk ${c.sq}`:""}${K.cross?`, hold short of runway ${K.cross}`:""}.`),
+    rb:g===1?`Follow the ${c.trf}, runway ${R} via ${RT}, ${cs}.`:`Runway ${R}, taxi via ${RT}${g===2?`, squawk ${c.sq}`:""}${K.cross?`, hold short runway ${K.cross}`:""}, ${cs}.`,tip:"Your normal route."}));
+  if(K.cross&&g!==1)st.push(G({sit:`Holding short of runway ${K.cross}.`,you:`${GNDT()}, ${cs} holding short runway ${K.cross}.`,tx:A(`${cs}, cross runway ${K.cross}, continue taxi.`),rb:`Cross runway ${K.cross}, ${cs}.`,tip:"Look both ways, then cross."}));
+  if(chance(.6)){
+    const h=chance(.5);
+    st.push(G({sit:"Taxiing to the runway.",you:null,tx:A(h?`${cs}, hold position.`:`${cs}, give way to the ${c.trf} from your left.`),rb:h?`Holding, ${cs}.`:`Give way to the ${c.trf}, ${cs}.`,tip:"Stop or give way, then wait for the next instruction."}));
+    st.push(G({sit:"Stopped on the taxiway.",you:null,tx:A(`${cs}, continue taxi.`),rb:`Continue taxi, ${cs}.`,tip:"Pick up where you left off."}));
+  }
+  const t=pick([0,1,2]);
+  if(t===1)st.push(T({sit:`Holding short ${R}${HP()}, run-up done.`,you:TWRCALL(),tx:A(`${FULL()}, ${TWRT()}, hold short runway ${R}, traffic ${c.mile} mile final.`),rb:`Holding short runway ${R}, ${cs}.`,tip:"Wait for the traffic to land."}));
+  if(t===2)st.push(T({sit:`Holding short ${R}${HP()}, run-up done.`,you:TWRCALL(),tx:A(`${FULL()}, ${TWRT()}, runway ${R}${HP()}, line up and wait.`),rb:`Runway ${R}${HP()}, line up and wait, ${cs}.`,tip:"Line up and stop."}));
+  st.push(T({sit:t===2?`Lined up on ${R}, waiting.`:t===1?`Still holding short ${R}. The traffic just landed.`:`Holding short ${R}${HP()}, run-up done.`,you:t===0?TWRCALL():null,
+    tx:A(`${t===0?`${FULL()}, ${TWRT()}`:cs}, wind ${c.wind}, runway ${R}${t===2?"":HP()}, cleared for takeoff, make ${D} closed traffic.`),
+    rb:`Runway ${R}${t===2?"":HP()}, cleared for takeoff, ${D} closed traffic, ${cs}.`,tip:"Lights, camera, action: landing light, transponder ALT, mixture, time."}));
+  st.push(P({sit:"Climbing on upwind.",you:null,tx:A(`${cs}, report midfield ${D} downwind.`),rb:`Wilco, ${cs}.`,tip:"Make the call when you're abeam midfield."}));
+  st.push(P({sit:`Midfield ${D} downwind ${R}.`,you:`${cs}, midfield ${D} downwind ${R}.`,tx:A(`${cs}, number 2, follow the ${c.trf} on base. Runway ${R}, cleared touch and go.`),
+    rb:`Number 2, following the ${c.trf}, traffic in sight, runway ${R}, cleared touch and go, ${cs}.`,tip:"Two instructions in one call. Read back both."}));
+  const e=pick(["ext","360","ga"]);
+  if(e==="ext")st.push(P({sit:`Second lap, ${D} downwind ${R}, abeam the numbers.`,you:null,tx:A(`${cs}, extend downwind, I'll call your base.`),rb:`Extend downwind, ${cs}.`,tip:"Keep going until tower calls your base."}),
+    P({sit:"Extended downwind, about 2 miles past the numbers.",you:null,tx:A(`${cs}, turn base now, runway ${R}, cleared touch and go.`),rb:`Base now, runway ${R}, cleared touch and go, ${cs}.`,tip:"Turn right away."}));
+  if(e==="360")st.push(P({sit:`Second lap, midfield ${D} downwind ${R}.`,you:`${cs}, midfield ${D} downwind ${R}.`,tx:A(`${cs}, make one 360 for spacing, then rejoin downwind.`),rb:`One 360, rejoin downwind, ${cs}.`,tip:`A ${D} 360 in ${D} traffic.`}),
+    P({sit:"Back on downwind after the 360.",you:null,tx:A(`${cs}, runway ${R}, cleared touch and go.`),rb:`Runway ${R}, cleared touch and go, ${cs}.`,tip:""}));
+  if(e==="ga")st.push(P({sit:`Second lap, short final ${R}. A Cirrus hasn't cleared the runway.`,you:null,tx:A(`${cs}, go around.`),rb:`Going around, ${cs}.`,tip:"Fly first, then talk."}),
+    P({sit:"Climbing out after the go around.",you:null,tx:A(`${cs}, make ${D} closed traffic, report midfield.`),rb:`${cap(D)} closed traffic, report midfield, ${cs}.`,tip:""}));
+  st.push(P({sit:`Last lap, midfield ${D} downwind ${R}.`,you:`${cs}, midfield ${D} downwind ${R}, full stop.`,tx:A(`${cs}, runway ${R}, cleared to land.`),rb:`Runway ${R}, cleared to land, ${cs}.`,tip:""}));
+  st.push(P({sit:`Rolling out on ${R}.`,you:null,tx:A(`${cs}, turn ${K.exitdir} ${K.exit}, contact ground ${GND()}.`),rb:`${cap(K.exitdir)} ${K.exit}, ground ${GND()}, ${cs}.`,tip:`Clear the hold line, stop, then switch to ${GND()}.`}));
+  st.push(G({sit:`Clear of runway ${R} at ${K.exit}.`,you:`${GNDT()}, ${FULL()} clear of runway ${R} at ${K.exit}, taxi to ${park}.`,tx:A(`${FULL()}, ${GNDT()}, taxi to ${park} via ${K.back}.`),rb:`${K.back} to ${park}, ${cs}.`,tip:"Flight complete."}));
+  return {steps:st,i:0,good:0};
+}
+
+// ---------- ATIS
+function makeAtis(c){
+  c=c||ctx();
+  const hh=String(ri(13,23)),mm=pick(["53","53","53","15"]),t=ri(14,31),d=t-ri(3,9);
+  const sky=pick(["Clear below 12,000","Few clouds at 3,500","Scattered 2,500, broken 5,000","Few clouds at 4,000"]);
+  const text=`${aptName()} information ${c.atis}, ${hh}${mm} Zulu. Wind ${c.wind}. Visibility 10. Sky condition, ${sky}. Temperature ${t}, dew point ${d}. Altimeter ${c.alt}. Departing and landing runway ${K.rwy}. Read back all runway hold short instructions. Advise on initial contact you have information ${c.atis}.`;
+  return {L:c.atis,wind:c.wind,vis:"10",sky,temp:`${t}/${d}`,alt:c.alt,rwy:K.rwy,text};
+}
+
+// ---------- render
+function setCard(item){
+  cur=decorate(item);
+  if(cloudActive())(cur.pre||[]).concat(cur.play||[]).forEach(t=>getAudio(spoken(t.text),keyFor(t)).catch(()=>{}));
+  $("stn").textContent=cur.stn;const s=document.createElement("small");s.textContent=cur.freq||"";$("stn").append(s);
+  $("sit").textContent=cur.sit;
+  $("lampwrap").hidden=!cur.light;
+  if(cur.light){$("lamp").className="lamp "+cur.light.cls;$("lamptxt").textContent="What does this light mean? Say it out loud, then check.";}
+  $("callbox").hidden=!!cur.light||cur.ph==="atis";
+  if(cur.you){$("calllbl").textContent="Your call. Say it out loud";$("call").textContent=cur.you;}
+  else{$("calllbl").textContent="No call from you";$("call").textContent="Listen. ATC may call you, or someone else.";}
+  $("callbox").classList.toggle("blind",!!cur.you&&$("hidecall").checked);
+  $("atisform").hidden=mode!=="atis";
+  $("rbwrap").hidden=!!cur.light||mode==="atis"||cur.ph==="atis";$("rbin").value="";$("keys").hidden=true;
+  $("good").classList.remove("sugg");$("miss").classList.remove("sugg");
+  $("play").hidden=!!cur.light;$("again").hidden=!!cur.light;
+  $("play").textContent=cur.you?"I made my call ▸ Listen":"Listen ▸";$("play").disabled=false;$("play").dataset.restart="";
+  $("again").disabled=true;$("show").disabled=!cur.light;
+  $("show").textContent=mode==="atis"?"Check my copy":"Check my readback";
+  $("reveal").hidden=true;
+  $("hint").textContent=cur.light?"":mode==="atis"?`Press Listen and copy as you hear it. The real ${ATISL()} repeats, so you can replay it.`:
+    `${cur.you?"Say your call out loud, then press Listen. ":"Press Listen. "}Answer only if it's for ${CS()}.`;
+  $("step").hidden=mode!=="flight";
+  if(mode==="flight")$("step").textContent=`Step ${flight.i+1} of ${flight.steps.length}`;
+}
+async function listen(isAgain){
+  ensureAel();
+  if(!("speechSynthesis" in window)&&!cloudActive()){$("hint").textContent="This browser can't speak. Open the page in Chrome, Safari or Edge.";reveal();return;}
+  initAudio();if(ctxA&&ctxA.state==="suspended")ctxA.resume();
+  $("play").disabled=true;$("again").disabled=true;
+  const list=isAgain?cur.tx:(cur.pre||[]).concat(cur.play);
+  const ok=await playQueue(list,isAgain?250:(cur.you?ri(900,1600):300));
+  if(!ok)return;
+  $("again").disabled=false;$("show").disabled=false;
+  $("hint").textContent=mode==="atis"?"Replay if you need to, then check your copy.":"Respond out loud now, then check.";
+}
+function txRow(cls,label,text){const d=document.createElement("div");d.className="tx "+cls;
+  const a=document.createElement("span");a.className="lbl";a.textContent=label;const b=document.createElement("span");b.className="v";b.textContent=text;d.append(a,b);return d;}
+function reveal(){
+  const L=$("txlist");L.innerHTML="";
+  (cur.pre||[]).concat(cur.play||[]).forEach(t=>{
+    const mine=t.me&&!t.trap;
+    L.append(txRow(mine?"me":"other",t.who==="pilot"?"Other pilot":mine?"ATC → you":t.trap?"ATC → trap":"ATC → other",t.blocked?t.text+" [blocked]":t.text));
+  });
+  $("rbT").textContent=cur.rb;$("tip").textContent=cur.tip||"";$("tip").hidden=!cur.tip;
+  if(mode==="atis")checkAtis();
+  else if(!cur.light&&cur.ph!=="atis")autoCheck();
+  $("reveal").hidden=false;$("show").disabled=true;
+}
+const norm=s=>(s||"").toLowerCase().replace(/[^a-z0-9]/g,"");
+const digits=s=>(s||"").replace(/\D/g,"");
+function checkAtis(){
+  const a=cur.atis,f=[["letter",a.L,x=>norm(x)[0]===a.L[0].toLowerCase()],["wind",a.wind,x=>digits(x)===digits(a.wind)],
+    ["vis","10",x=>digits(x)==="10"],["sky",a.sky,x=>x.trim().length>0],["temp",a.temp,x=>digits(x)===digits(a.temp)],
+    ["alt",a.alt,x=>digits(x)===digits(a.alt)],["rwy",a.rwy,x=>norm(x)===norm(a.rwy)||digits(x)===a.rwy]];
+  f.forEach(([k,ans,ok])=>{const inp=$("a-"+k),g=ok(inp.value);inp.classList.toggle("ok",g);inp.classList.toggle("no",!g);$("r-"+k).textContent=g?"✓":"→ "+ans;});
+}
+// ---------- automatic readback check
+const NUMW={zero:"0",one:"1",two:"2",three:"3",four:"4",five:"5",six:"6",seven:"7",eight:"8",nine:"9",niner:"9",ten:"10",eleven:"11",twelve:"12",fifteen:"15",twenty:"20"};
+const PHW=Object.fromEntries(LET.map(w=>[w.toLowerCase().replace("-",""),w[0].toLowerCase()]));
+function userNorm(u){return " "+u.toLowerCase().replace(/[’']/g,"").replace(/[^a-z0-9.,\s-]/g," ").replace(/\b[a-z]+\b/g,w=>NUMW[w]||w)+" ";}
+const CRIT=[
+ [/hold short/i,"hold short",/hold(ing)? short/],[/cross runway/i,"cross",/cross/],[/line up and wait/i,"line up and wait",/line(d)? up/],
+ [/cleared for takeoff/i,"cleared for takeoff",/take ?off/],[/cleared to land/i,"cleared to land",/to land/],[/touch and go/i,"touch and go",/touch/],
+ [/option/i,"option",/option/],[/\bleft\b/i,"left",/\bleft\b/],[/\bright\b/i,"right",/\b(right|write)\b/],[/go(ing)? around/i,"going around",/go(ing)? around/],
+ [/unable/i,"unable",/unable/],[/immediate/i,"immediate",/immediate/],[/^holding/i,"holding",/hold/],[/extend/i,"extend downwind",/extend/],
+ [/give way/i,"give way",/give way/],[/in sight|looking|following/i,"in sight / looking",/in sight|follow|looking|negative contact/],
+ [/squawk/i,"squawk",/squa/],[/ident/i,"ident",/ident/],[/straight in/i,"straight in",/straight/],[/\bbase\b/i,"base",/base/],
+ [/downwind/i,"downwind",/downwind/],[/monitor/i,"monitor",/monitor/],[/cancel/i,"cancel",/cancel/],[/stopping/i,"stopping",/stop/],
+ [/say again/i,"say again",/say again|repeat/],[/visual separation/i,"visual separation",/visual/],[/expect/i,"expect",/expect/],
+ [/crosswind/i,"crosswind",/crosswind/],[/slowest/i,"slowest practical",/slow/],[/^(wilco|roger|affirmative)/i,"acknowledge",/wilco|roger|affirm|will do|copy/],
+ [/turning/i,"turning",/turn/],[/report/i,"will report",/report|wilco|will/],[/number 2/i,"number 2",/number|two|\b2\b/],[/contact|ground \d|tower \d/i,"frequency",/\d/]];
+function keysFor(rb){
+  if(/^\(say nothing/i.test(rb))return {silent:true,keys:[]};
+  let t=rb.replace(/\([^)]*\)/g,"").replace(new RegExp("\\b"+K.tail+"\\b","g")," ");
+  const keys=[{label:K.tail,cs:true}];
+  (t.match(/\d[\d.,]*\d|\d/g)||[]).forEach(n=>{const d=n.replace(/\D/g,"");if(!keys.some(k=>k.d===d))keys.push({label:n.replace(/[.,]$/,""),d});});
+  (t.match(/\b[A-Za-z][A-Za-z-]+\b/g)||[]).forEach(w=>{const k=w.toLowerCase().replace("-","");if(PHW[k]&&!keys.some(x=>x.w===k))keys.push({label:w,w:k});});
+  const lowS=t.toLowerCase().trim();
+  CRIT.forEach(([has,label,test])=>{if(has.test(lowS)&&!(label==="holding"&&/hold short/i.test(lowS)))keys.push({label,re:test});});
+  return {silent:false,keys};
+}
+function autoCheck(){
+  const raw=$("rbin").value.trim(),box=$("keys");box.innerHTML="";
+  const kf=keysFor(cur.rb);
+  if(!raw&&!kf.silent){box.hidden=true;return;}
+  let pass;const row=document.createElement("div");row.className="row";
+  if(kf.silent){
+    pass=!raw||/nothing|quiet|silent|no response|not (for )?me/i.test(raw);
+    const s=document.createElement("span");s.className="key "+(pass?"y":"n");s.textContent=pass?"✓ stayed quiet":"✗ should have stayed quiet";row.append(s);
+  }else{
+    const u=userNorm(raw),ud=u.replace(/\D/g,""),uc=u.replace(/\b[a-z]+\b/g,w=>PHW[w]||w).replace(/[^a-z0-9]/g,""),un=u.replace(/[\s-]/g,"");
+    pass=true;
+    kf.keys.forEach(k=>{
+      let ok;
+      if(k.cs)ok=uc.includes(K.tail.toLowerCase());
+      else if(k.d)ok=ud.includes(k.d);
+      else if(k.w)ok=un.includes(k.w)||new RegExp("\\b"+k.w[0]+"\\b").test(u);
+      else ok=k.re.test(u);
+      if(!ok)pass=false;
+      const s=document.createElement("span");s.className="key "+(ok?"y":"n");s.textContent=(ok?"✓ ":"✗ ")+k.label;row.append(s);
+    });
+  }
+  const v=document.createElement("p");v.className="verdict "+(pass?"y":"n");
+  v.textContent=pass?"Automatic check: every key item is there.":"Automatic check: something important is missing.";
+  const yl=document.createElement("span");yl.className="lbl";yl.textContent="You typed";
+  const yt=document.createElement("span");yt.className="v";yt.textContent=raw||"(nothing)";
+  const yr=document.createElement("div");yr.className="tx";yr.append(yl,yt);
+  box.append(yr,v,row);box.hidden=false;
+  $(pass?"good":"miss").classList.add("sugg");
+}
+
+// ---------- hands-free
+const hf={on:false,id:0,lock:null};
+function narrate(text,id){
+  if(cloudActive()&&cloud.ael)return playCloud(spoken(text),"narrator",false,()=>id!==hf.id).then(ok=>ok?undefined:narrateDevice(text,id));
+  return narrateDevice(text,id);
+}
+function narrateDevice(text,id){
+  return new Promise(res=>{
+    if(id!==hf.id)return res();
+    const u=new SpeechSynthesisUtterance(spoken(text));const v=pilotVoice();
+    if(v){u.voice=v;u.lang=v.lang;}else u.lang="en-US";u.rate=Math.min(+$("rate").value,1.25);u.pitch=1;
+    u.onend=res;u.onerror=res;speechSynthesis.speak(u);
+  });
+}
+const hfWait=(ms,id)=>new Promise(r=>{const t0=Date.now();const tick=()=>{if(id!==hf.id||Date.now()-t0>=ms)r();else setTimeout(tick,150);};tick();});
+const words=s=>(s||"").split(/\s+/).length;
+async function hfRun(){
+  ensureAel();
+  if(!("speechSynthesis" in window)&&!cloudActive()){$("hint").textContent="This browser can't speak. Open the page in Chrome, Safari or Edge.";return;}
+  if(mode==="atis")setMode("drill");
+  const id=++hf.id;hf.on=true;
+  initAudio();if(ctxA&&ctxA.state==="suspended")ctxA.resume();
+  try{if(navigator.wakeLock)navigator.wakeLock.request("screen").then(l=>{hf.lock=l;},()=>{});}catch(e){hf.lock=null;}
+  $("hfBtn").setAttribute("aria-pressed","true");$("hfbar").hidden=false;$("play").disabled=true;
+  while(id===hf.id){
+    let item;
+    if(mode==="flight"){if(!flight||flight.i>=flight.steps.length){flight=buildFlight();}item=flight.steps[flight.i++];}
+    else item=nextDrill();
+    setCard(item);$("play").disabled=true;$("again").disabled=true;
+    if(mode==="flight")$("step").textContent=`Step ${flight.i} of ${flight.steps.length}`;
+    await narrate(cur.sit,id);await hfWait(500,id);
+    if(cur.you){await narrate("Make your call.",id);await hfWait(1500+words(cur.you)*420,id);}
+    if(id!==hf.id)break;
+    queueId++;const qid=queueId;
+    const list=(cur.pre||[]).concat(cur.play);
+    for(let i=0;i<list.length&&id===hf.id;i++){await say(list[i],qid);setRx(false);await hfWait(ri(350,700),id);}
+    if(id!==hf.id)break;
+    const silent=/^\(say nothing/i.test(cur.rb);
+    await hfWait(silent?2500:2200+words(cur.rb)*420,id);
+    reveal();
+    await narrate(cur.trapCs?`That call was for ${cur.trapCs}, not ${K.tail}. The right answer was to stay quiet.`:silent?"That call was for you, and the right answer was to say nothing. Standby means wait for them to call you back.":"Correct readback. "+cur.rb.replace(/\([^)]*\)\s*/g,""),id);
+    await hfWait(1800,id);
+  }
+}
+function hfStop(){
+  hf.id++;hf.on=false;queueId++;hush();setRx(false);
+  try{hf.lock&&hf.lock.release();}catch(e){}hf.lock=null;
+  $("hfBtn").setAttribute("aria-pressed","false");$("hfbar").hidden=true;
+  if(mode==="flight"&&flight&&flight.i>0)flight.i=Math.max(0,flight.i-1);
+  setMode(mode==="flight"?"flight":mode);
+}
+
+function grade(ok){
+  stats.done++;if(ok)stats.good++;
+  else{missed.unshift({atc:(cur.tx[0]||{}).text||cur.sit,rb:cur.rb});missed=missed.slice(0,12);
+    const ol=$("missed");ol.innerHTML="";missed.forEach(m=>{const li=document.createElement("li");const s=document.createElement("span");s.textContent=m.atc;const cd=document.createElement("code");cd.textContent=m.rb;li.append(s,document.createElement("br"),"→ ",cd);ol.append(li);});}
+  $("sDone").textContent=stats.done;$("sGood").textContent=stats.good;
+  if(mode==="drill")return setCard(nextDrill());
+  if(mode==="atis")return newAtis();
+  if(ok)flight.good++;flight.i++;
+  if(flight.i>=flight.steps.length){
+    queueId++;hush();
+    $("stn").textContent="Flight complete";$("step").textContent=`${flight.good} of ${flight.steps.length} calls right`;
+    $("sit").textContent=`You're parked at ${K.park}. Each full flight changes the ${ATISL()}, traffic and events.`;
+    $("callbox").hidden=true;$("reveal").hidden=true;$("lampwrap").hidden=true;$("again").hidden=true;$("show").disabled=true;
+    $("play").hidden=false;$("play").disabled=false;$("play").textContent="Fly again ▸";$("play").dataset.restart="1";$("hint").textContent="";
+    return;
+  }
+  setCard(flight.steps[flight.i]);
+}
+function newAtis(){
+  const a=makeAtis();
+  ["letter","wind","vis","sky","temp","alt","rwy"].forEach(k=>{const i=$("a-"+k);i.value="";i.classList.remove("ok","no");$("r-"+k).textContent="";});
+  setCard({ph:"atis",stn:`${K.fac} ${ATISL()}`,freq:ATISF(),sit:`Copy the ${ATISL()} like you would before calling ground.`,you:null,
+    tx:[{who:"atc",text:a.text,me:true}],rb:"Compare each box above.",tip:`Write in shorthand as it plays: ${a.L[0]} / ${a.wind.replace(" at ","@")} / 10 / sky / ${a.temp} / ${a.alt} / ${a.rwy}.`});
+  cur.atis=a;
+}
+function setMode(m){
+  if(hf.on&&m!==mode){hf.id++;hf.on=false;$("hfBtn").setAttribute("aria-pressed","false");$("hfbar").hidden=true;}
+  mode=m;queueId++;hush();setRx(false);
+  ["drill","flight","atis"].forEach(k=>$("t-"+k).setAttribute("aria-selected",k===m));
+  $("phases").hidden=m!=="drill";
+  if(m==="drill")setCard(nextDrill());
+  if(m==="flight"){flight=buildFlight();setCard(flight.steps[0]);}
+  if(m==="atis")newAtis();
+}
+
+// ---------- setup panel
+const F=["fac","park","type","tail","rwy","dir","route","hold","cross","inter","exit","exitdir","back","alt","altroute"];
+function fillRunways(){
+  const r=rwys();
+  $("c-rwy").innerHTML="";r.forEach(x=>$("c-rwy").add(new Option(x,x)));
+  ["c-cross","c-alt"].forEach(id=>{$(id).innerHTML="";$(id).add(new Option("None",""));r.forEach(x=>$(id).add(new Option(x,x)));});
+}
+function paintSetup(){
+  $("c-apt").value=`${AP[0]} — ${AP[1]}`;
+  fillRunways();
+  if(!rwys().includes(K.rwy))K.rwy=rwys()[0];
+  if(K.cross&&!rwys().includes(K.cross))K.cross="";
+  if(K.alt&&!rwys().includes(K.alt))K.alt="";
+  F.forEach(k=>{$("c-"+k).value=K[k]||"";});
+  $("aptinfo").textContent=`${AP[2]}${AP[3]?", "+AP[3]:""} · Ground ${AP[4]||"n/a"} · Tower ${AP[5]}${AP[6]?` · ${ATISL()} ${AP[6]}`:""} · Runways ${AP[8].replace(/ /g,", ")}`;
+  paintSum();
+}
+function paintSum(){
+  const s=$("sum");s.innerHTML="";
+  const b=document.createElement("b");b.textContent=AP[0];
+  s.append(b,` · ${FULL()} · ${K.park} → Rwy ${K.rwy} via ${K.route}`);
+}
+function save(){try{localStorage.setItem("rb_cfg",JSON.stringify(Object.assign({apt:AP[0]},K)))}catch(e){}}
+let rebuildT=null;
+function changed(){
+  F.forEach(k=>{K[k]=$("c-"+k).value.trim();});
+  K.tail=K.tail.toUpperCase().replace(/^N/,"").replace(/[^A-Z0-9]/g,"")||"483E";
+  K.type=K.type||"Cessna";K.fac=K.fac||guessFac(AP);K.park=K.park||"the ramp";K.route=K.route||"Alpha";
+  K.exit=K.exit||"Alpha";K.back=K.back||K.route;
+  save();paintSum();S=scenarios();
+  clearTimeout(rebuildT);rebuildT=setTimeout(()=>setMode(mode),400);
+}
+const dl=$("aptlist");APTS.forEach(a=>{const o=document.createElement("option");o.value=`${a[0]} — ${a[1]}`;o.label=`${a[2]}, ${a[3]}`;dl.append(o);});
+$("c-apt").addEventListener("change",()=>{
+  const v=$("c-apt").value.trim().toUpperCase(),id=v.split(/\s|—/)[0];
+  let a=aptOf(id)||aptOf("K"+id)||APTS.find(x=>(x[0]+" "+x[1]+" "+x[2]).toUpperCase().includes(v));
+  if(!a){$("aptmsg").textContent="No towered airport matches that. Try the identifier, like KORL.";return;}
+  $("aptmsg").textContent="677 U.S. airports with a control tower.";
+  if(a===AP){$("c-apt").value=`${AP[0]} — ${AP[1]}`;return;}
+  AP=a;K.apt=a[0];K.fac=guessFac(a);
+  if(a[0]!=="KISM"){K.park="the ramp";K.route="Alpha";K.hold="";K.cross="";K.inter="";K.exit="Alpha";K.exitdir="left";K.back="Alpha";K.alt="";K.altroute="";}
+  else Object.assign(K,DEFAULT,{type:K.type,tail:K.tail});
+  K.rwy=rwys()[0];
+  paintSetup();save();S=scenarios();setMode(mode);
+  $("c-park").focus();
+});
+F.forEach(k=>$("c-"+k).addEventListener(["rwy","dir","cross","exitdir","alt"].includes(k)?"change":"input",changed));
+
+// ---------- wiring
+document.querySelectorAll(".chip").forEach(b=>{
+  b.setAttribute("aria-pressed",b.dataset.ph===phase);
+  b.onclick=()=>{phase=b.dataset.ph;try{localStorage.setItem("rt_phase",phase)}catch(e){}
+    document.querySelectorAll(".chip").forEach(x=>x.setAttribute("aria-pressed",x===b));queueId++;setCard(nextDrill());};
+});
+$("t-drill").onclick=()=>setMode("drill");$("t-flight").onclick=()=>setMode("flight");$("t-atis").onclick=()=>setMode("atis");
+$("rate").oninput=()=>$("rateV").textContent=(+$("rate").value).toFixed(2)+"×";
+$("hidecall").onchange=()=>$("callbox").classList.toggle("blind",!!(cur&&cur.you)&&$("hidecall").checked);
+$("callbox").onclick=()=>$("callbox").classList.remove("blind");
+$("play").onclick=()=>{if($("play").dataset.restart==="1"){setMode("flight");return;}listen(false);};
+$("again").onclick=()=>{stats.say++;$("sSay").textContent=stats.say;listen(true);};
+$("show").onclick=reveal;
+$("hfBtn").onclick=()=>{if(hf.on)hfStop();else hfRun();};
+$("hfStop").onclick=hfStop;
+$("rbin").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();if(!$("show").disabled)reveal();}});
+$("good").onclick=()=>grade(true);$("miss").onclick=()=>grade(false);
+document.addEventListener("keydown",e=>{if(e.code==="Space"&&e.target===document.body){e.preventDefault();if(!$("play").disabled&&!$("play").hidden)$("play").click();}});
+paintSetup();
+probeCloud();
+try{if(!localStorage.getItem("rb_cfg"))$("setup").open=true;}catch(e){}
+setMode("drill");
+})();
+</script>
+
+</body>
+</html>
