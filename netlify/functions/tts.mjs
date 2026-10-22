@@ -33,7 +33,7 @@ export default async (req) => {
     return new Response("Bad request", { status: 400, headers: noStore });
   }
 
-  const id = await sha256(`${v}|${text}`);
+  const id = await sha256(`v2|${v}|${text}`);
   const cache = getStore("tts-cache");
   const hit = await cache.get(id, { type: "arrayBuffer" });
   if (hit) return audio(hit);
@@ -49,7 +49,7 @@ export default async (req) => {
     method: "POST",
     headers: { "content-type": "application/json", ...(await authHeader(key, sa)) },
     body: JSON.stringify({
-      input: { text },
+      input: { ssml: toSsml(text, v) },
       voice: { languageCode: "en-US", name: VOICES[v] },
       audioConfig: { audioEncoding: "MP3", speakingRate: 1.05 },
     }),
@@ -93,6 +93,13 @@ async function authHeader(key, sa) {
   const j = await r.json();
   token = { value: j.access_token, exp: Date.now() + j.expires_in * 1000 };
   return { authorization: `Bearer ${token.value}` };
+}
+
+// A short silent lead-in so phones and Bluetooth headsets don't clip the first word.
+function toSsml(text, v) {
+  const esc = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const lead = v === "narrator" ? "450ms" : "250ms";
+  return `<speak><break time="${lead}"/>${esc}</speak>`;
 }
 
 function audio(buf) {
