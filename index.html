@@ -428,17 +428,37 @@ function scenarios(){
     tip:"Don't switch until you're past the hold line."}),
   c=>P({sit:"Climbing on upwind, last lap. You're heading out to the practice area.",you:`${cs}, request ${c.dir} departure.`,tx:A(`${cs}, ${c.dir} departure approved, frequency change approved.`),
     rb:`${cap(c.dir)} departure, frequency change approved, ${cs}.`,tip:"Stay with tower until you're clear of their airspace, unless they approve the change."}),
-  // INBOUND
-  c=>I({sit:`Coming back from the practice area, ${c.dist} miles ${c.dir}, 2,000 feet.`,you:`${TWRT()}, ${FULL()}, ${c.dist} miles ${c.dir}, 2,000, inbound for landing with information ${c.atis}.`,
-    tx:A(`${FULL()}, ${TWRT()}, enter ${D} downwind runway ${R}, report midfield.`),rb:`${cap(D)} downwind ${R}, report midfield, ${cs}.`,tip:"Plan your 45° entry to the downwind before you call."}),
-  c=>I({sit:`Coming back, ${c.dist} miles ${c.dir}, 2,000 feet.`,you:`${TWRT()}, ${FULL()}, ${c.dist} miles ${c.dir}, 2,000, inbound for landing with information ${c.atis}.`,
-    tx:A(`${FULL()}, ${TWRT()}, enter ${O} base runway ${R}, report 2 mile base.`),rb:`${cap(O)} base ${R}, report 2 mile base, ${cs}.`,tip:`${cap(O)} base means joining from the other side of your usual pattern. Picture it before you turn.`}),
-  c=>I({sit:`Coming back, ${c.dist} miles ${c.dir}, 2,000 feet.`,you:`${TWRT()}, ${FULL()}, ${c.dist} miles ${c.dir}, 2,000, inbound for landing with information ${c.atis}.`,
-    tx:A(`${FULL()}, ${TWRT()}, make straight in runway ${R}, report 3 mile final.`),rb:`Straight in ${R}, report 3 mile final, ${cs}.`,tip:"Line up early on the extended centerline."}),
-  c=>I({sit:`Coming back, ${c.dist} miles ${c.dir}, 2,000 feet.`,you:`${TWRT()}, ${FULL()}, ${c.dist} miles ${c.dir}, 2,000, inbound for landing with information ${c.atis}.`,
-    tx:A(`${FULL()}, ${TWRT()}, squawk ${c.sq} and ident.`),rb:`Squawk ${c.sq}, ident, ${cs}.`,tip:"Set the code, then press IDENT once."}),
-  c=>I({sit:`Coming back, ${c.dist} miles ${c.dir}. The ATIS changed while you were out.`,you:`${TWRT()}, ${FULL()}, ${c.dist} miles ${c.dir}, 2,000, inbound for landing with information ${c.atis}.`,
-    tx:A(`${FULL()}, ${TWRT()}, information ${c.next} is current, altimeter ${c.alt}. Enter ${D} downwind runway ${R}.`),rb:`${c.next}, ${c.alt}, ${D} downwind ${R}, ${cs}.`,tip:"Set the new altimeter right away."}),
+  // INBOUND: the tower may assign any runway, so each call picks one with a matching wind
+  ...(()=>{
+    const pickR=()=>{const all=rwys(),r=(chance(.35)||all.length<2)?R:pick(all.filter(x=>x!==R));
+      const d=r===R?D:(chance(.7)?"left":"right"),n=parseInt(r)||36;
+      return {r,d,o:OPP(d),w:`${String(((n*10+ri(-2,2)*10+359)%360)+1).padStart(3,"0")} at ${ri(4,12)}`,
+        note:r===oppR(R)?` Runway ${r} is the opposite end of ${R}, so the whole pattern flips. Picture it before you turn.`:r!==R?` Runway ${r} isn't your usual runway. Picture where it is from your position before you turn.`:""};};
+    const CALLIN=c=>`${TWRT()}, ${FULL()}, ${c.dist} miles ${c.dir}, 2,000, inbound for landing with information ${c.atis}.`;
+    const SIT=c=>`Coming back from the practice area, ${c.dist} miles ${c.dir}, 2,000 feet.`;
+    return [
+    c=>{const x=pickR();return I({sit:SIT(c),you:CALLIN(c),tx:A(`${FULL()}, ${TWRT()}, enter ${x.d} downwind runway ${x.r}, report midfield.`),
+      rb:`${cap(x.d)} downwind ${x.r}, report midfield, ${cs}.`,tip:"Plan your 45° entry to the downwind before you call."+x.note});},
+    c=>{const x=pickR();return I({sit:SIT(c),you:CALLIN(c),tx:A(`${FULL()}, ${TWRT()}, wind ${x.w}, enter ${x.d} downwind runway ${x.r}, report midfield.`),
+      rb:`${cap(x.d)} downwind ${x.r}, report midfield, ${cs}.`,tip:"No need to read back the wind. Runway and pattern entry are what matter."+x.note});},
+    c=>{const x=pickR();return I({sit:SIT(c),you:CALLIN(c),tx:A(`${FULL()}, ${TWRT()}, enter ${x.o} base runway ${x.r}, report 2 mile base.`),
+      rb:`${cap(x.o)} base ${x.r}, report 2 mile base, ${cs}.`,tip:"Base entries come straight in from the side. Work out which way you turn to final."+x.note});},
+    c=>{const x=pickR();return I({sit:SIT(c),you:CALLIN(c),tx:A(`${FULL()}, ${TWRT()}, make straight in runway ${x.r}, report 3 mile final.`),
+      rb:`Straight in ${x.r}, report 3 mile final, ${cs}.`,tip:"Line up early on the extended centerline."+x.note});},
+    c=>{const x=pickR();return I({sit:SIT(c),you:CALLIN(c),tx:A(`${FULL()}, ${TWRT()}, enter ${x.d} downwind runway ${x.r}, runway ${x.r}, cleared to land.`),
+      rb:`${cap(x.d)} downwind ${x.r}, cleared to land runway ${x.r}, ${cs}.`,tip:"Cleared to land on first contact happens when the pattern is quiet. Read back the landing clearance."+x.note});},
+    c=>{const x=pickR();return I({sit:SIT(c),you:CALLIN(c),tx:A(`${FULL()}, ${TWRT()}, enter ${x.d} downwind runway ${x.r}, report midfield, number 2 following a ${c.trf} on the 45.`),
+      rb:`${cap(x.d)} downwind ${x.r}, report midfield, number 2, looking for traffic, ${cs}.`,tip:`Say "traffic in sight" only if you see it.`+x.note});},
+    c=>{const x=pickR();return I({sit:SIT(c),you:CALLIN(c),tx:A(`${FULL()}, ${TWRT()}, report 5 miles ${c.dir}, expect ${x.d} downwind runway ${x.r}.`),
+      rb:`Report 5 miles ${c.dir}, expect ${x.d} downwind ${x.r}, ${cs}.`,tip:`"Expect" isn't a clearance yet. Make the report at 5 miles and wait for your entry instruction.`+x.note});},
+    c=>I({sit:SIT(c)+" The pattern is busy.",you:CALLIN(c),tx:A(`${FULL()}, ${TWRT()}, remain outside the class Delta, I'll call you back.`),
+      rb:`Remain outside class Delta, ${cs}.`,tip:"Hold or circle outside the airspace until tower calls you. Don't enter until they do."}),
+    c=>I({sit:SIT(c),you:CALLIN(c),tx:A(`${FULL()}, ${TWRT()}, squawk ${c.sq} and ident.`),rb:`Squawk ${c.sq}, ident, ${cs}.`,tip:"Set the code, then press IDENT once."}),
+    c=>{const x=pickR();return I({sit:`Coming back, ${c.dist} miles ${c.dir}. The ATIS changed while you were out.`,you:CALLIN(c),
+      tx:A(`${FULL()}, ${TWRT()}, information ${c.next} is current, altimeter ${c.alt}. Enter ${x.d} downwind runway ${x.r}.`),
+      rb:`${c.next}, ${c.alt}, ${x.d} downwind ${x.r}, ${cs}.`,tip:"Set the new altimeter right away. A new ATIS can mean a new runway."+x.note});},
+    ];
+  })(),
   ];
   const X=o=>Object.assign({ph:"traffic",stn:TWRT(),freq:TWRF()},o);
   const C=o=>Object.assign({ph:"curve",stn:TWRT(),freq:TWRF()},o);
