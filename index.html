@@ -49,6 +49,12 @@ h1 span{color:var(--amber)}
 .fld input,.fld select{background:var(--bezel);border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:8px;font:500 .92rem var(--f-mono);width:100%;max-width:none}
 .fld small{color:var(--dim);font-size:.78rem;line-height:1.35}
 .fld.wide{grid-column:1/-1}
+.usebox{grid-column:1/-1}
+.rwchips{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px}
+.rwchip{font:600 .9rem var(--f-mono);background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 14px;cursor:pointer}
+.rwchip[aria-pressed="true"]{border-color:var(--amber);color:var(--amber);background:var(--amber-soft)}
+.rwchip.off{opacity:.45;text-decoration:line-through}
+.rwchip .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--ok);margin-left:6px;vertical-align:middle}
 .aptinfo{grid-column:1/-1;font-family:var(--f-mono);font-size:.85rem;color:var(--dim);margin:0}
 .tabs{display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:4px}
 .tab{flex:1;font:600 .92rem var(--f-display);letter-spacing:.05em;text-transform:uppercase;background:transparent;color:var(--dim);border:0;border-radius:7px;padding:9px 6px;cursor:pointer}
@@ -164,21 +170,20 @@ body{margin:0}
       <label class="fld"><span class="lbl">Aircraft type</span><input id="c-type" autocomplete="off" placeholder="Cessna"></label>
       <label class="fld"><span class="lbl">Tail number (without N)</span><input id="c-tail" autocomplete="off" placeholder="483E">
         <small>ATC will call you by this after the first call.</small></label>
-      <h3>Your usual departure</h3>
-      <label class="fld"><span class="lbl">Runway</span><select id="c-rwy"></select></label>
+      <h3>Runways</h3>
+      <p class="aptinfo wideinfo">The runway in use changes with the wind, so every call picks one of the runways you practice on, with a wind that matches. Tap a runway to set how you taxi to it.</p>
+      <div class="rwchips" id="rwchips" role="group" aria-label="Runway to edit"></div>
+      <label class="tog usebox"><input id="c-use" type="checkbox"> Practice with this runway</label>
       <label class="fld"><span class="lbl">Traffic pattern</span><select id="c-dir"><option value="left">Left traffic</option><option value="right">Right traffic</option></select></label>
-      <label class="fld"><span class="lbl">Taxi route to it</span><input id="c-route" autocomplete="off" placeholder="Foxtrot, Bravo, Delta"></label>
+      <label class="fld"><span class="lbl">Taxi route to it</span><input id="c-route" autocomplete="off" placeholder="Foxtrot, Bravo, Delta">
+        <small>Leave blank if you don't know it yet. Ground calls then use your other runways.</small></label>
       <label class="fld"><span class="lbl">Hold short point</span><input id="c-hold" autocomplete="off" placeholder="Delta 1 (optional)"></label>
       <label class="fld"><span class="lbl">Runway you cross on the way</span><select id="c-cross"></select>
         <small>Optional. Adds hold short and crossing calls.</small></label>
       <label class="fld"><span class="lbl">Intersection departure point</span><input id="c-inter" autocomplete="off" placeholder="Delta 2 (optional)"></label>
-      <h3>After landing</h3>
-      <label class="fld"><span class="lbl">Usual exit</span><input id="c-exit" autocomplete="off" placeholder="Bravo"></label>
+      <label class="fld"><span class="lbl">Usual exit after landing</span><input id="c-exit" autocomplete="off" placeholder="Bravo"></label>
       <label class="fld"><span class="lbl">Turn to exit</span><select id="c-exitdir"><option value="left">Left</option><option value="right">Right</option></select></label>
       <label class="fld"><span class="lbl">Route back to parking</span><input id="c-back" autocomplete="off" placeholder="Bravo, Foxtrot"></label>
-      <h3>Other runway (optional)</h3>
-      <label class="fld"><span class="lbl">Runway</span><select id="c-alt"></select></label>
-      <label class="fld"><span class="lbl">Taxi route to it</span><input id="c-altroute" autocomplete="off" placeholder="Foxtrot, Bravo"></label>
       <p class="aptinfo">Saved in this browser only. Taxi routes come from you, so use the ones ground really gives you.</p>
     </div>
   </details>
@@ -289,13 +294,42 @@ const cap=s=>s?s[0].toUpperCase()+s.slice(1):s;
 function oppR(r){const m=String(r).match(/^(\d+)([LRC]?)$/);if(!m)return r;const n=(+m[1]+17)%36+1;return n+({L:"R",R:"L",C:"C"}[m[2]]||"");}
 
 // ---------- configuration
-const DEFAULT={apt:"KISM",fac:"Kissimmee",park:"Spectrum",type:"Cessna",tail:"483E",rwy:"15",dir:"left",route:"Foxtrot, Bravo, Delta",hold:"Delta 1",
-  cross:"",inter:"Delta 2",exit:"Bravo",exitdir:"left",back:"Bravo, Foxtrot",alt:"6",altroute:"Foxtrot, Bravo"};
-let K=Object.assign({},DEFAULT);
-try{const s=JSON.parse(localStorage.getItem("rb_cfg")||"null");if(s&&s.apt)K=Object.assign({},DEFAULT,s);}catch(e){}
+const RWF=["dir","route","hold","cross","inter","exit","exitdir","back"];
+const KISM_RW={
+  "15":{use:true,dir:"left",route:"Foxtrot, Bravo, Delta",hold:"Delta 1",cross:"",inter:"Delta 2",exit:"Bravo",exitdir:"left",back:"Bravo, Foxtrot"},
+  "6":{use:true,dir:"left",route:"Foxtrot, Bravo",hold:"",cross:"",inter:"",exit:"",exitdir:"left",back:""},
+  "24":{use:true,dir:"left",route:"Foxtrot, Bravo",hold:"",cross:"15",inter:"",exit:"",exitdir:"left",back:""},
+  "33":{use:true,dir:"left",route:"",hold:"",cross:"",inter:"",exit:"",exitdir:"left",back:""}};
+const DEFAULT={apt:"KISM",fac:"Kissimmee",park:"Spectrum",type:"Cessna",tail:"483E",rw:JSON.parse(JSON.stringify(KISM_RW))};
+let K=JSON.parse(JSON.stringify(DEFAULT));
+try{const s=JSON.parse(localStorage.getItem("rb_cfg")||"null");
+  if(s&&s.apt){
+    if(!s.rw){ // older saved setup: one usual runway plus an optional second one
+      const rw=s.apt==="KISM"?JSON.parse(JSON.stringify(KISM_RW)):{};
+      if(s.rwy){rw[s.rwy]=Object.assign({},rw[s.rwy]||{},{use:true});RWF.forEach(f=>{if(s[f]!==undefined)rw[s.rwy][f]=s[f];});}
+      if(s.alt&&s.altroute)rw[s.alt]=Object.assign({},rw[s.alt]||{},{use:true,route:s.altroute});
+      s.rw=rw;
+    }
+    K=Object.assign({},DEFAULT,s);
+  }
+}catch(e){}
+K.rw=K.rw||{};
 const aptOf=id=>APTS.find(a=>a[0]===id);
 let AP=aptOf(K.apt)||aptOf("KISM");
 const rwys=()=>AP[8].split(" ");
+const rwCfg=r=>Object.assign({use:true,dir:"left",route:"",hold:"",cross:"",inter:"",exit:"",exitdir:"left",back:""},K.rw[r]||{});
+const activeRw=()=>{const a=rwys().filter(r=>rwCfg(r).use);return a.length?a:rwys();};
+const routedRw=()=>activeRw().filter(r=>rwCfg(r).route);
+// Makes runway r the runway in use: copies its setup into the fields the calls are built from.
+function useRunway(r){
+  const c=rwCfg(r),anyRoute=(rwys().map(x=>rwCfg(x).route).find(Boolean))||"Alpha";
+  const route=c.route||anyRoute,parts=route.split(",").map(x=>x.trim()).filter(Boolean);
+  const back=c.back||parts.slice().reverse().join(", ");
+  Object.assign(K,{rwy:r,dir:c.dir||"left",route,hold:c.hold,cross:rwys().includes(c.cross)&&c.cross!==r?c.cross:"",inter:c.inter,
+    exit:c.exit||back.split(",")[0].trim()||"Alpha",exitdir:c.exitdir||"left",back});
+}
+function pickRunway(needRoute){const l=needRoute&&routedRw().length?routedRw():activeRw();useRunway(pick(l));}
+useRunway(activeRw()[0]);
 function guessFac(a){
   let n=a[1].replace(/\b(International|Intl|Regional|Municipal|Executive|County|Field|Airport|Airpark|Air Park|Airfield|Jetport|Gateway|Memorial|Metropolitan|Air Terminal|Terminal)\b/gi,"").replace(/[\/\-(].*$/,"").replace(/\s+/g," ").trim();
   if(!n)n=a[2];return n.split(" ").slice(0,2).join(" ");
@@ -428,42 +462,38 @@ function scenarios(){
     tip:"Don't switch until you're past the hold line."}),
   c=>P({sit:"Climbing on upwind, last lap. You're heading out to the practice area.",you:`${cs}, request ${c.dir} departure.`,tx:A(`${cs}, ${c.dir} departure approved, frequency change approved.`),
     rb:`${cap(c.dir)} departure, frequency change approved, ${cs}.`,tip:"Stay with tower until you're clear of their airspace, unless they approve the change."}),
-  // INBOUND: the tower may assign any runway, so each call picks one with a matching wind
+  // INBOUND
   ...(()=>{
-    const pickR=()=>{const all=rwys(),r=(chance(.35)||all.length<2)?R:pick(all.filter(x=>x!==R));
-      const d=r===R?D:(chance(.7)?"left":"right"),n=parseInt(r)||36;
-      return {r,d,o:OPP(d),w:`${String(((n*10+ri(-2,2)*10+359)%360)+1).padStart(3,"0")} at ${ri(4,12)}`,
-        note:r===oppR(R)?` Runway ${r} is the opposite end of ${R}, so the whole pattern flips. Picture it before you turn.`:r!==R?` Runway ${r} isn't your usual runway. Picture where it is from your position before you turn.`:""};};
     const CALLIN=c=>`${TWRT()}, ${FULL()}, ${c.dist} miles ${c.dir}, 2,000, inbound for landing with information ${c.atis}.`;
     const SIT=c=>`Coming back from the practice area, ${c.dist} miles ${c.dir}, 2,000 feet.`;
     return [
-    c=>{const x=pickR();return I({sit:SIT(c),you:CALLIN(c),tx:A(`${FULL()}, ${TWRT()}, enter ${x.d} downwind runway ${x.r}, report midfield.`),
-      rb:`${cap(x.d)} downwind ${x.r}, report midfield, ${cs}.`,tip:"Plan your 45° entry to the downwind before you call."+x.note});},
-    c=>{const x=pickR();return I({sit:SIT(c),you:CALLIN(c),tx:A(`${FULL()}, ${TWRT()}, wind ${x.w}, enter ${x.d} downwind runway ${x.r}, report midfield.`),
-      rb:`${cap(x.d)} downwind ${x.r}, report midfield, ${cs}.`,tip:"No need to read back the wind. Runway and pattern entry are what matter."+x.note});},
-    c=>{const x=pickR();return I({sit:SIT(c),you:CALLIN(c),tx:A(`${FULL()}, ${TWRT()}, enter ${x.o} base runway ${x.r}, report 2 mile base.`),
-      rb:`${cap(x.o)} base ${x.r}, report 2 mile base, ${cs}.`,tip:"Base entries come straight in from the side. Work out which way you turn to final."+x.note});},
-    c=>{const x=pickR();return I({sit:SIT(c),you:CALLIN(c),tx:A(`${FULL()}, ${TWRT()}, make straight in runway ${x.r}, report 3 mile final.`),
-      rb:`Straight in ${x.r}, report 3 mile final, ${cs}.`,tip:"Line up early on the extended centerline."+x.note});},
-    c=>{const x=pickR();return I({sit:SIT(c),you:CALLIN(c),tx:A(`${FULL()}, ${TWRT()}, enter ${x.d} downwind runway ${x.r}, runway ${x.r}, cleared to land.`),
-      rb:`${cap(x.d)} downwind ${x.r}, cleared to land runway ${x.r}, ${cs}.`,tip:"Cleared to land on first contact happens when the pattern is quiet. Read back the landing clearance."+x.note});},
-    c=>{const x=pickR();return I({sit:SIT(c),you:CALLIN(c),tx:A(`${FULL()}, ${TWRT()}, enter ${x.d} downwind runway ${x.r}, report midfield, number 2 following a ${c.trf} on the 45.`),
-      rb:`${cap(x.d)} downwind ${x.r}, report midfield, number 2, looking for traffic, ${cs}.`,tip:`Say "traffic in sight" only if you see it.`+x.note});},
-    c=>{const x=pickR();return I({sit:SIT(c),you:CALLIN(c),tx:A(`${FULL()}, ${TWRT()}, report 5 miles ${c.dir}, expect ${x.d} downwind runway ${x.r}.`),
-      rb:`Report 5 miles ${c.dir}, expect ${x.d} downwind ${x.r}, ${cs}.`,tip:`"Expect" isn't a clearance yet. Make the report at 5 miles and wait for your entry instruction.`+x.note});},
+    c=>I({sit:SIT(c),you:CALLIN(c),tx:A(`${FULL()}, ${TWRT()}, enter ${D} downwind runway ${R}, report midfield.`),
+      rb:`${cap(D)} downwind ${R}, report midfield, ${cs}.`,tip:"Plan your 45° entry to the downwind before you call."}),
+    c=>I({sit:SIT(c),you:CALLIN(c),tx:A(`${FULL()}, ${TWRT()}, wind ${c.wind}, enter ${D} downwind runway ${R}, report midfield.`),
+      rb:`${cap(D)} downwind ${R}, report midfield, ${cs}.`,tip:"No need to read back the wind. Runway and pattern entry are what matter."}),
+    c=>I({sit:SIT(c),you:CALLIN(c),tx:A(`${FULL()}, ${TWRT()}, enter ${O} base runway ${R}, report 2 mile base.`),
+      rb:`${cap(O)} base ${R}, report 2 mile base, ${cs}.`,tip:"Base entries come in from the side. Work out which way you turn to final."}),
+    c=>I({sit:SIT(c),you:CALLIN(c),tx:A(`${FULL()}, ${TWRT()}, make straight in runway ${R}, report 3 mile final.`),
+      rb:`Straight in ${R}, report 3 mile final, ${cs}.`,tip:"Line up early on the extended centerline."}),
+    c=>I({sit:SIT(c),you:CALLIN(c),tx:A(`${FULL()}, ${TWRT()}, enter ${D} downwind runway ${R}, runway ${R}, cleared to land.`),
+      rb:`${cap(D)} downwind ${R}, cleared to land runway ${R}, ${cs}.`,tip:"Cleared to land on first contact happens when the pattern is quiet. Read back the landing clearance."}),
+    c=>I({sit:SIT(c),you:CALLIN(c),tx:A(`${FULL()}, ${TWRT()}, enter ${D} downwind runway ${R}, report midfield, number 2 following a ${c.trf} on the 45.`),
+      rb:`${cap(D)} downwind ${R}, report midfield, number 2, looking for traffic, ${cs}.`,tip:`Say "traffic in sight" only if you see it.`}),
+    c=>I({sit:SIT(c),you:CALLIN(c),tx:A(`${FULL()}, ${TWRT()}, report 5 miles ${c.dir}, expect ${D} downwind runway ${R}.`),
+      rb:`Report 5 miles ${c.dir}, expect ${D} downwind ${R}, ${cs}.`,tip:`"Expect" isn't a clearance yet. Make the report at 5 miles and wait for your entry instruction.`}),
     c=>I({sit:SIT(c)+" The pattern is busy.",you:CALLIN(c),tx:A(`${FULL()}, ${TWRT()}, remain outside the class Delta, I'll call you back.`),
       rb:`Remain outside class Delta, ${cs}.`,tip:"Hold or circle outside the airspace until tower calls you. Don't enter until they do."}),
     c=>I({sit:SIT(c),you:CALLIN(c),tx:A(`${FULL()}, ${TWRT()}, squawk ${c.sq} and ident.`),rb:`Squawk ${c.sq}, ident, ${cs}.`,tip:"Set the code, then press IDENT once."}),
-    c=>{const x=pickR();return I({sit:`Coming back, ${c.dist} miles ${c.dir}. The ATIS changed while you were out.`,you:CALLIN(c),
-      tx:A(`${FULL()}, ${TWRT()}, information ${c.next} is current, altimeter ${c.alt}. Enter ${x.d} downwind runway ${x.r}.`),
-      rb:`${c.next}, ${c.alt}, ${x.d} downwind ${x.r}, ${cs}.`,tip:"Set the new altimeter right away. A new ATIS can mean a new runway."+x.note});},
+    c=>I({sit:`Coming back, ${c.dist} miles ${c.dir}. The ATIS changed while you were out.`,you:CALLIN(c),
+      tx:A(`${FULL()}, ${TWRT()}, information ${c.next} is current, altimeter ${c.alt}. Enter ${D} downwind runway ${R}.`),
+      rb:`${c.next}, ${c.alt}, ${D} downwind ${R}, ${cs}.`,tip:"Set the new altimeter right away."}),
     ];
   })(),
   ];
   const X=o=>Object.assign({ph:"traffic",stn:TWRT(),freq:TWRF()},o);
   const C=o=>Object.assign({ph:"curve",stn:TWRT(),freq:TWRF()},o);
   const BD=()=>pick(["opposite direction","northbound","southbound","eastbound","westbound"]);
-  const TW1=(taxiwords()[0]||"Alpha"),OR=oppR(R),AF=pick(["118.3","120.25","119.15","127.4"]);
+  const TW1=(taxiwords()[0]||"Alpha"),OR=(()=>{const o=activeRw().filter(x=>x!==R);return o.length?pick(o):oppR(R);})(),AF=pick(["118.3","120.25","119.15","127.4"]);
   S.push(
   c=>X({sit:`Crosswind for ${R}, climbing through 800 feet.`,you:null,tx:A(`${cs}, traffic ${ri(1,3)} o'clock, ${c.mile} miles, ${BD()}, a ${c.trf} at 1,500.`),
     rb:`Looking for traffic, ${cs}.`,tip:`Say "traffic in sight" only if you see it. Otherwise "looking". 12 o'clock is straight off your nose, 3 o'clock is off your right wing.`}),
@@ -504,12 +534,6 @@ function scenarios(){
   if(K.inter)S.push(c=>G({sit:`Parked at ${park}. The pattern is busy, so ground offers an intersection departure.`,you:SPEC(c),
     tx:A(`${FULL()}, ${GNDT()}, runway ${R} at ${K.inter}, intersection departure, taxi via ${RT}.`),rb:`Runway ${R} at ${K.inter}, taxi via ${RT}, ${cs}.`,
     tip:`You'll have less runway. If you want the full length: "${cs}, request full length."`}));
-  if(K.alt&&K.altroute){
-    S.push(c=>G({sit:`Parked at ${park}. You expect runway ${R}.`,you:SPEC(c),tx:A(`${FULL()}, ${GNDT()}, wind ${String(((parseInt(K.alt)||36)*10)).padStart(3,"0")} at ${ri(5,10)}, runway ${K.alt}, taxi via ${K.altroute}.`),
-      rb:`Runway ${K.alt}, taxi via ${K.altroute}, ${cs}.`,tip:"Trap: read back the runway they gave you, not the one you expected. Then re-brief your departure."}),
-    c=>T({sit:`Holding short runway ${K.alt}.`,you:`${TWRT()}, ${FULL()} holding short runway ${K.alt}, ready for touch and go's.`,tx:A(`${FULL()}, ${TWRT()}, runway ${K.alt}, cleared for takeoff, make ${O} closed traffic.`),
-      rb:`Runway ${K.alt}, cleared for takeoff, ${O} closed traffic, ${cs}.`,tip:"Different runway, maybe a different pattern direction. Listen for it."}));
-  }
   return S;
 }
 let S=scenarios();
@@ -732,6 +756,7 @@ function decorate(item){
 }
 function nextDrill(){
   const ph=hf.on&&phase==="light"?"all":phase;
+  pickRunway(ph==="ground");S=scenarios();
   const pool=S.map((f,i)=>i).filter(i=>ph==="all"||S[i](ctx()).ph===ph);
   const extra=["all","ground","tower","pattern"].includes(phase);
   const r=Math.random();
@@ -739,11 +764,16 @@ function nextDrill(){
   if(extra&&$("chatter").checked&&r<.2)return trapItem(phase==="all"?pick(["ground","pattern"]):(phase==="tower"?"pattern":phase));
   if(extra&&r<.26)return blockedItem(phase==="all"||phase==="pattern"?pick(["ground","tower"]):phase);
   let idx;do{idx=pick(pool)}while(pool.length>1&&idx===lastIdx);lastIdx=idx;
-  return S[idx](ctx());
+  let item=S[idx](ctx());
+  if(item.ph==="ground"&&!rwCfg(K.rwy).route&&routedRw().length){ // a taxi call needs a runway with a known route
+    pickRunway(true);S=scenarios();const g=S.map((f,i)=>i).filter(i=>S[i](ctx()).ph==="ground");item=S[pick(g)](ctx());
+  }
+  return item;
 }
 
 // ---------- full flight
 function buildFlight(){
+  pickRunway(true);
   const c=ctx(),a=makeAtis(c),st=[],cs=CS(),R=K.rwy,RT=K.route,D=K.dir,park=K.park;
   st.push({ph:"atis",stn:`${K.fac} ${ATISL()}`,freq:ATISF(),sit:`Engine running at ${park}. Tune the ${ATISL()} and copy it.`,you:null,
     tx:[{who:"atc",text:a.text,me:true}],rb:`Information ${a.L}, wind ${a.wind}, altimeter ${a.alt}, runway ${R}.`,tip:"Write the letter, wind, altimeter and runway before you call ground."});
@@ -973,6 +1003,7 @@ function grade(ok){
   setCard(flight.steps[flight.i]);
 }
 function newAtis(){
+  pickRunway(false);
   const a=makeAtis();
   ["letter","wind","vis","sky","temp","alt","rwy"].forEach(k=>{const i=$("a-"+k);i.value="";i.classList.remove("ok","no");$("r-"+k).textContent="";});
   setCard({ph:"atis",stn:`${K.fac} ${ATISL()}`,freq:ATISF(),sit:`Copy the ${ATISL()} like you would before calling ground.`,you:null,
@@ -990,18 +1021,30 @@ function setMode(m){
 }
 
 // ---------- setup panel
-const F=["fac","park","type","tail","rwy","dir","route","hold","cross","inter","exit","exitdir","back","alt","altroute"];
+const F=["fac","park","type","tail"];
+let editRw=null;
 function fillRunways(){
-  const r=rwys();
-  $("c-rwy").innerHTML="";r.forEach(x=>$("c-rwy").add(new Option(x,x)));
-  ["c-cross","c-alt"].forEach(id=>{$(id).innerHTML="";$(id).add(new Option("None",""));r.forEach(x=>$(id).add(new Option(x,x)));});
+  $("c-cross").innerHTML="";$("c-cross").add(new Option("None",""));
+  rwys().filter(x=>x!==editRw).forEach(x=>$("c-cross").add(new Option(x,x)));
+}
+function paintRwChips(){
+  const box=$("rwchips");box.innerHTML="";
+  rwys().forEach(r=>{const c=rwCfg(r),b=document.createElement("button");b.type="button";b.className="rwchip"+(c.use?"":" off");
+    b.textContent=r;b.setAttribute("aria-pressed",r===editRw);if(c.route){const d=document.createElement("span");d.className="dot";d.title="Taxi route set";b.append(d);}
+    b.onclick=()=>{editRw=r;paintRwForm();};box.append(b);});
+}
+function paintRwForm(){
+  fillRunways();paintRwChips();
+  const c=rwCfg(editRw);
+  $("c-use").checked=!!c.use;
+  RWF.forEach(f=>{$("c-"+f).value=c[f]||"";});
+  if(!["left","right"].includes($("c-dir").value))$("c-dir").value="left";
+  if(!["left","right"].includes($("c-exitdir").value))$("c-exitdir").value="left";
 }
 function paintSetup(){
   $("c-apt").value=`${AP[0]} — ${AP[1]}`;
-  fillRunways();
-  if(!rwys().includes(K.rwy))K.rwy=rwys()[0];
-  if(K.cross&&!rwys().includes(K.cross))K.cross="";
-  if(K.alt&&!rwys().includes(K.alt))K.alt="";
+  if(!editRw||!rwys().includes(editRw))editRw=rwys().find(r=>rwCfg(r).route)||rwys()[0];
+  paintRwForm();
   F.forEach(k=>{$("c-"+k).value=K[k]||"";});
   $("aptinfo").textContent=`${AP[2]}${AP[3]?", "+AP[3]:""} · Ground ${AP[4]||"n/a"} · Tower ${AP[5]}${AP[6]?` · ${ATISL()} ${AP[6]}`:""} · Runways ${AP[8].replace(/ /g,", ")}`;
   paintSum();
@@ -1009,16 +1052,16 @@ function paintSetup(){
 function paintSum(){
   const s=$("sum");s.innerHTML="";
   const b=document.createElement("b");b.textContent=AP[0];
-  s.append(b,` · ${FULL()} · ${K.park} → Rwy ${K.rwy} via ${K.route}`);
+  s.append(b,` · ${FULL()} · ${K.park} · Runways ${activeRw().join(", ")}`);
 }
-function save(){try{localStorage.setItem("rb_cfg",JSON.stringify(Object.assign({apt:AP[0]},K)))}catch(e){}}
+function save(){try{const o={apt:AP[0],rw:K.rw};F.forEach(k=>o[k]=K[k]);localStorage.setItem("rb_cfg",JSON.stringify(o))}catch(e){}}
 let rebuildT=null;
 function changed(){
   F.forEach(k=>{K[k]=$("c-"+k).value.trim();});
   K.tail=K.tail.toUpperCase().replace(/^N/,"").replace(/[^A-Z0-9]/g,"")||"483E";
-  K.type=K.type||"Cessna";K.fac=K.fac||guessFac(AP);K.park=K.park||"the ramp";K.route=K.route||"Alpha";
-  K.exit=K.exit||"Alpha";K.back=K.back||K.route;
-  save();paintSum();S=scenarios();
+  K.type=K.type||"Cessna";K.fac=K.fac||guessFac(AP);K.park=K.park||"the ramp";
+  const c=rwCfg(editRw);c.use=$("c-use").checked;RWF.forEach(f=>{c[f]=$("c-"+f).value.trim();});K.rw[editRw]=c;
+  paintRwChips();save();paintSum();
   clearTimeout(rebuildT);rebuildT=setTimeout(()=>setMode(mode),400);
 }
 const dl=$("aptlist");APTS.forEach(a=>{const o=document.createElement("option");o.value=`${a[0]} — ${a[1]}`;o.label=`${a[2]}, ${a[3]}`;dl.append(o);});
@@ -1028,14 +1071,16 @@ $("c-apt").addEventListener("change",()=>{
   if(!a){$("aptmsg").textContent="No towered airport matches that. Try the identifier, like KORL.";return;}
   $("aptmsg").textContent="677 U.S. airports with a control tower.";
   if(a===AP){$("c-apt").value=`${AP[0]} — ${AP[1]}`;return;}
-  AP=a;K.apt=a[0];K.fac=guessFac(a);
-  if(a[0]!=="KISM"){K.park="the ramp";K.route="Alpha";K.hold="";K.cross="";K.inter="";K.exit="Alpha";K.exitdir="left";K.back="Alpha";K.alt="";K.altroute="";}
-  else Object.assign(K,DEFAULT,{type:K.type,tail:K.tail});
-  K.rwy=rwys()[0];
-  paintSetup();save();S=scenarios();setMode(mode);
+  AP=a;K.apt=a[0];K.fac=guessFac(a);editRw=null;
+  if(a[0]!=="KISM"){K.park="the ramp";K.rw={};}
+  else{K.fac=DEFAULT.fac;K.park=DEFAULT.park;K.rw=JSON.parse(JSON.stringify(KISM_RW));}
+  useRunway(activeRw()[0]);
+  paintSetup();save();setMode(mode);
   $("c-park").focus();
 });
-F.forEach(k=>$("c-"+k).addEventListener(["rwy","dir","cross","exitdir","alt"].includes(k)?"change":"input",changed));
+F.forEach(k=>$("c-"+k).addEventListener("input",changed));
+RWF.forEach(k=>$("c-"+k).addEventListener(["dir","cross","exitdir"].includes(k)?"change":"input",changed));
+$("c-use").addEventListener("change",changed);
 
 // ---------- wiring
 document.querySelectorAll(".chip").forEach(b=>{
